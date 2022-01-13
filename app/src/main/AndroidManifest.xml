@@ -8,13 +8,15 @@
 
     <application
         android:allowBackup="true"
+        android:fullBackupOnly="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
         <service
             android:name=".ServiceData"
-            android:exported="false"></service>
+            android:exported="false">
+        </service>
 
         <uses-library
             android:name="com.google.android.wearable"
@@ -36,6 +38,11 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".Sensado"
+            android:label="@string/title_activity_sensado">
         </activity>
     </application>
 

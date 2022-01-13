@@ -30,7 +30,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     final static int ERROR        = 100;
     final static int MSG          = 200;
 
-    private TextView textViewAcceleration;
+    private TextView textViewAcceleration, textViewGyroscope, textViewBarometer;
     private ActivitySensadoBinding binding;
 
     AmbientModeSupport.AmbientController controller;
@@ -40,7 +40,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     Intent intentServicioDatos;
 
-    String sMsgAccelerometer;
+    String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +50,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         setContentView(binding.getRoot());
 
         textViewAcceleration = findViewById(R.id.textViewAcceleration);
+        textViewGyroscope = findViewById(R.id.textViewGyroscope);
+        textViewBarometer = findViewById(R.id.textViewBarometer);
 
         registerReceiver(receiver, new IntentFilter(NOTIFICATION));
 
@@ -65,7 +67,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
             }
         };
 
-        sMsgAccelerometer = "";
+        ambientUpdateAlarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, AMBIENT_INTERVAL_MS, AMBIENT_INTERVAL_MS, ambientUpdatePendingIntent);
         crearServicio();
     }
 
@@ -90,8 +92,10 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     private void refreshDisplayAndSetNextUpdate() {
         // Implement data retrieval and update the screen
         textViewAcceleration.setText(sMsgAccelerometer);
+        textViewGyroscope.setText(sMsgGyroscope);
+        textViewBarometer.setText(sMsgBarometer);
 
-        long timeMs = System.currentTimeMillis();
+        /*long timeMs = System.currentTimeMillis();
         // Schedule a new alarm
         // Calculate the next trigger time
         long delayMs = AMBIENT_INTERVAL_MS - (timeMs % AMBIENT_INTERVAL_MS);
@@ -99,7 +103,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         ambientUpdateAlarmManager.setExact(
                 AlarmManager.RTC_WAKEUP,
                 triggerTimeMs,
-                ambientUpdatePendingIntent);
+                ambientUpdatePendingIntent);*/
     }
 
     @Override
@@ -121,7 +125,6 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         //ambientUpdateAlarmManager.cancel(ambientUpdatePendingIntent);
         super.onDestroy();
 
-        unregisterReceiver(ambientUpdateBroadcastReceiver);
         unregisterReceiver(receiver);
     }
 
@@ -140,30 +143,28 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 int iDevice = bundle.getInt("Device");
                 String sCadena = bundle.getString("Cadena");
 
-                switch (iDevice) {
-                    case ERROR:
-                        // Se para el servicio y se vuelve a iniciar
-                        stopService(intentServicioDatos);
-                        crearServicio();
-                        break;
-                    default:
-                        switch (iSensor) {
-                            case ACELEROMETRO:
-                                sMsgAccelerometer = sCadena;
-                                break;
-                            /*case GIROSCOPO:
-                                sMsgGyroscope = sCadena;
-                                break;
-                            case MAGNETOMETRO:
-                                sMsgMagnetometer = sCadena;
-                                break;
-                            case HEART_RATE:
-                                sMsgHR = sCadena;
-                                break;
-                            case BAROMETER:
-                                sMsgBarometer = sCadena;
-                                break;*/
-                        }
+                if (iDevice == ERROR) {
+                    // Se para el servicio y se vuelve a iniciar
+                    stopService(intentServicioDatos);
+                    crearServicio();
+                } else {
+                    switch (iSensor) {
+                        case ACELEROMETRO:
+                            sMsgAccelerometer = sCadena;
+                            break;
+                        case GIROSCOPO:
+                            sMsgGyroscope = sCadena;
+                            break;
+                        case BAROMETER:
+                            sMsgBarometer = sCadena;
+                            break;
+                        /*case MAGNETOMETRO:
+                            sMsgMagnetometer = sCadena;
+                            break;
+                        case HEART_RATE:
+                            sMsgHR = sCadena;
+                            break;*/
+                    }
                 }
             }
         }

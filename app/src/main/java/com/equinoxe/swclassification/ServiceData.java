@@ -25,12 +25,12 @@ public class ServiceData extends Service implements SensorEventListener {
     private final static boolean SENSORS_ON = true;
     private final static boolean SENSORS_OFF = false;
     private static final int MUESTRAS_POR_SEGUNDO_GAME = 60;
-    private static final int iWindowSize = 3000;    // 3 segundos (3000 ms)
+    private static final int iWindowSize = 5000;    // 5 segundos (3000 ms)
 
     private ServiceHandler mServiceHandler;
     private SensorManager sensorManager;
 
-    private String sCadenaAcelerometro;
+    private String sCadenaAccelerometer, sCadenaGyroscope, sCadenaBarometer;
 
     PowerManager powerManager;
     PowerManager.WakeLock wakeLock;
@@ -41,7 +41,11 @@ public class ServiceData extends Service implements SensorEventListener {
 
     int iTamBuffer;
     SensorData []dataAccelerometer;
+    SensorData []dataGyroscope;
+    SensorData []dataBarometer;
     int iPosDataAccelerometer = 0;
+    int iPosDataGyroscope = 0;
+    int iPosDataBarometer = 0;
 
     @Override
     public void onCreate() {
@@ -67,19 +71,19 @@ public class ServiceData extends Service implements SensorEventListener {
         public void handleMessage(Message msg) {
             switch (msg.arg1) {
                 case Sensado.ACELEROMETRO:
-                    publishSensorValues(Sensado.ACELEROMETRO, msg.arg2, sCadenaAcelerometro);
+                    publishSensorValues(Sensado.ACELEROMETRO, msg.arg2, sCadenaAccelerometer);
                     break;
-/*                case Sensado.GIROSCOPO:
-                    publishSensorValues(Sensado.GIROSCOPO, msg.arg2, sCadenaGiroscopo);
+                case Sensado.GIROSCOPO:
+                    publishSensorValues(Sensado.GIROSCOPO, msg.arg2, sCadenaGyroscope);
                     break;
-                case Sensado.MAGNETOMETRO:
+                case Sensado.BAROMETER:
+                    publishSensorValues(Sensado.BAROMETER, msg.arg2, sCadenaBarometer);
+                    break;
+                /*case Sensado.MAGNETOMETRO:
                     publishSensorValues(Sensado.MAGNETOMETRO, msg.arg2, sCadenaMagnetometro);
                     break;
                 case Sensado.HEART_RATE:
                     publishSensorValues(Sensado.HEART_RATE, msg.arg2, sCadenaHeartRate);
-                    break;
-                case Sensado.BAROMETER:
-                    publishSensorValues(Sensado.BAROMETER, msg.arg2, sCadenaBarometro);
                     break;*/
             }
         }
@@ -99,10 +103,20 @@ public class ServiceData extends Service implements SensorEventListener {
 
         final TimerTask timerTaskUpdateData = new TimerTask() {
             public void run() {
-                    Message msg = mServiceHandler.obtainMessage();
-                    msg.arg1 = Sensado.ACELEROMETRO;
-                    msg.arg2 = 0;
-                    mServiceHandler.sendMessage(msg);
+                Message msgAccelerometer = mServiceHandler.obtainMessage();
+                msgAccelerometer.arg1 = Sensado.ACELEROMETRO;
+                msgAccelerometer.arg2 = 0;
+                mServiceHandler.sendMessage(msgAccelerometer);
+
+                Message msgGyroscope = mServiceHandler.obtainMessage();
+                msgGyroscope.arg2 = 0;
+                msgGyroscope.arg1 = Sensado.GIROSCOPO;
+                mServiceHandler.sendMessage(msgGyroscope);
+
+                Message msgBarometer = mServiceHandler.obtainMessage();
+                msgBarometer.arg2 = 0;
+                msgBarometer.arg1 = Sensado.BAROMETER;
+                mServiceHandler.sendMessage(msgBarometer);
             }
         };
         timerUpdateData = new Timer();
@@ -110,8 +124,13 @@ public class ServiceData extends Service implements SensorEventListener {
 
         iTamBuffer = MUESTRAS_POR_SEGUNDO_GAME * iWindowSize/1000;
         dataAccelerometer = new SensorData[iTamBuffer];
+        dataGyroscope = new SensorData[iTamBuffer];
+        dataBarometer = new SensorData[iTamBuffer];
+
         for (int i = 0; i < iTamBuffer; i++) {
             dataAccelerometer[i] = new SensorData();
+            dataGyroscope[i] = new SensorData();
+            dataBarometer[i] = new SensorData();
         }
 
         controlSensors(SENSORS_ON);
@@ -120,11 +139,22 @@ public class ServiceData extends Service implements SensorEventListener {
     }
 
     private void controlSensors(boolean bSensors_ON) {
-            Sensor sensorAcelerometro = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            if (bSensors_ON)
-                sensorManager.registerListener(this, sensorAcelerometro, SensorManager.SENSOR_DELAY_GAME);
-            else
-                sensorManager.unregisterListener(this, sensorAcelerometro);
+            Sensor sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            Sensor sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+            Sensor sensorBarometer = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+
+            if (bSensors_ON) {
+                sensorManager.registerListener(this, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+                sensorManager.registerListener(this, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
+                if (sensorBarometer != null)
+                    sensorManager.registerListener(this, sensorBarometer, SensorManager.SENSOR_DELAY_GAME);
+            }
+            else {
+                sensorManager.unregisterListener(this, sensorAccelerometer);
+                sensorManager.unregisterListener(this, sensorGyroscope);
+                if (sensorBarometer != null)
+                    sensorManager.unregisterListener(this, sensorBarometer);
+            }
     }
 
 
@@ -140,10 +170,20 @@ public class ServiceData extends Service implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
         switch (sensorEvent.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
-                sCadenaAcelerometro = "A: " + df.format(sensorEvent.values[0]) + " "
+                sCadenaAccelerometer = "A: " + df.format(sensorEvent.values[0]) + " "
                         + df.format(sensorEvent.values[1]) + " "
                         + df.format(sensorEvent.values[2]);
                 procesarDatosSensados(Sensor.TYPE_ACCELEROMETER, sensorEvent.timestamp, sensorEvent.values);
+                break;
+            case Sensor.TYPE_GYROSCOPE:
+                sCadenaGyroscope = "G: " + df.format(sensorEvent.values[0]) + " "
+                        + df.format(sensorEvent.values[1]) + " "
+                        + df.format(sensorEvent.values[2]);
+                procesarDatosSensados(Sensor.TYPE_GYROSCOPE, sensorEvent.timestamp, sensorEvent.values);
+                break;
+            case Sensor.TYPE_PRESSURE:
+                sCadenaBarometer = "B: " + df.format(sensorEvent.values[0]);
+                procesarDatosSensados(Sensor.TYPE_PRESSURE, sensorEvent.timestamp, sensorEvent.values);
                 break;
         }
     }
@@ -158,6 +198,14 @@ public class ServiceData extends Service implements SensorEventListener {
             case Sensor.TYPE_ACCELEROMETER:
                 dataAccelerometer[iPosDataAccelerometer].setData(timeStamp, values);
                 iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
+                break;
+            case Sensor.TYPE_GYROSCOPE:
+                dataGyroscope[iPosDataGyroscope].setData(timeStamp, values);
+                iPosDataGyroscope = (iPosDataGyroscope + 1) % iTamBuffer;
+                break;
+            case Sensor.TYPE_PRESSURE:
+                dataBarometer[iPosDataBarometer].setData(timeStamp, values);
+                iPosDataBarometer = (iPosDataBarometer + 1) % iTamBuffer;
                 break;
         }
     }
