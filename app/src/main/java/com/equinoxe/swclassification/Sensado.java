@@ -30,7 +30,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     final static int ERROR        = 100;
     final static int MSG          = 200;
 
-    private TextView textViewAcceleration, textViewGyroscope, textViewBarometer;
+    private TextView textViewAcceleration, textViewGyroscope, textViewBarometer, textViewMsg;
     private ActivitySensadoBinding binding;
 
     AmbientModeSupport.AmbientController controller;
@@ -40,7 +40,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     Intent intentServicioDatos;
 
-    String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer;
+    String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +52,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         textViewAcceleration = findViewById(R.id.textViewAcceleration);
         textViewGyroscope = findViewById(R.id.textViewGyroscope);
         textViewBarometer = findViewById(R.id.textViewBarometer);
+        textViewMsg = findViewById(R.id.textViewMsg);
 
         registerReceiver(receiver, new IntentFilter(NOTIFICATION));
 
@@ -94,6 +95,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         textViewAcceleration.setText(sMsgAccelerometer);
         textViewGyroscope.setText(sMsgGyroscope);
         textViewBarometer.setText(sMsgBarometer);
+        textViewMsg.setText(sMsg);
 
         /*long timeMs = System.currentTimeMillis();
         // Schedule a new alarm
@@ -140,24 +142,21 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
             if (bundle != null) {
                 int iSensor = bundle.getInt("Sensor");
-                int iDevice = bundle.getInt("Device");
                 String sCadena = bundle.getString("Cadena");
 
-                if (iDevice == ERROR) {
-                    // Se para el servicio y se vuelve a iniciar
-                    stopService(intentServicioDatos);
-                    crearServicio();
-                } else {
-                    switch (iSensor) {
-                        case ACELEROMETRO:
-                            sMsgAccelerometer = sCadena;
-                            break;
-                        case GIROSCOPO:
-                            sMsgGyroscope = sCadena;
-                            break;
-                        case BAROMETER:
-                            sMsgBarometer = sCadena;
-                            break;
+                switch (iSensor) {
+                    case ACELEROMETRO:
+                        sMsgAccelerometer = sCadena;
+                        break;
+                    case GIROSCOPO:
+                        sMsgGyroscope = sCadena;
+                        break;
+                    case BAROMETER:
+                        sMsgBarometer = sCadena;
+                        break;
+                    case MSG:
+                        sMsg = sCadena;
+                        break;
                         /*case MAGNETOMETRO:
                             sMsgMagnetometer = sCadena;
                             break;
@@ -166,7 +165,6 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                             break;*/
                     }
                 }
-            }
         }
     };
 

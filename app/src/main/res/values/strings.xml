@@ -10,4 +10,28 @@
 
     <string name="START">Start</string>
     <string name="STOP">Stop</string>
+    <string name="MODEL">Model:</string>
+    <string name="MODEL">Model:</string>
+    <string name="DEVICE">Device:</string>
+    <string name="THREADS">Threads:</string>
+
+    <string-array name="tfe_ic_models" translatable="false">
+        <item>Quantized_EfficientNet</item>
+        <item>Float_EfficientNet</item>
+        <item>Quantized_MobileNet</item>
+        <item>Float_MobileNet</item>
+    </string-array>
+
+    <string-array name="tfe_ic_devices" translatable="false">
+        <item>CPU</item>
+        <item>NNAPI</item>
+    </string-array>
+
+    <string-array name="tfe_ic_threads" translatable="false">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
 </resources>
