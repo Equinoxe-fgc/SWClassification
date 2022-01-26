@@ -54,5 +54,25 @@ public class SensorData {
     public double getModule() {
         return dModule;
     }
+
+    public int getQuantizeValueAccelerometer() {
+        return 0xff000000 | ((getQuantizedValueA(v1) << 6) & 0xff0000) | ((getQuantizedValueA(v2) >> 2) & 0xff00) | ((getQuantizedValueA(v3) >> 10) & 0xff);
+    }
+
+    public int getQuantizeValueGyroscope() {
+        return 0xff000000 | ((getQuantizedValueG(v1) << 16) & 0xff0000) | ((getQuantizedValueG(v2) << 8) & 0xff00) | (getQuantizedValueG(v3));
+    }
+
+    private int getQuantizedValueA (float valueIn) {
+        int valueOut = 0;
+
+        return valueOut;
+    }
+
+    private int getQuantizedValueG (float valueIn) {
+        int valueOut = 0;
+
+        return valueOut;
+    }
 }
 

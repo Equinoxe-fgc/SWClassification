@@ -192,7 +192,7 @@ public class ServiceData extends Service implements SensorEventListener {
         for (int i = 0; i < iTamBuffer; i++) {
             data = dataAccelerometer[iPosDataAccelerometer];
             iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
-            rgbBytes[i] = 0xff000000 | ((data.getV1Quantized() << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
+            rgbBytes[i] = data.getQuantizeValueAccelerometer();
         }
     }
 

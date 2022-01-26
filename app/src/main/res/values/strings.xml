@@ -4,13 +4,12 @@
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.
     -->
-    <string name="VERSION_DATE">13/01/2022</string>
+    <string name="VERSION_DATE">26/01/2022</string>
 
     <string name="title_activity_sensado">Sensado</string>
 
     <string name="START">Start</string>
     <string name="STOP">Stop</string>
-    <string name="MODEL">Model:</string>
     <string name="MODEL">Model:</string>
     <string name="DEVICE">Device:</string>
     <string name="THREADS">Threads:</string>
