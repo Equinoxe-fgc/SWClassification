@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -15,6 +16,9 @@ import androidx.wear.ambient.AmbientModeSupport;
 
 import com.equinoxe.swclassification.databinding.ActivitySensadoBinding;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class Sensado extends FragmentActivity implements AmbientModeSupport.AmbientCallbackProvider {
@@ -31,6 +35,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     final static int MSG          = 200;
 
     private TextView textViewAcceleration, textViewGyroscope, textViewBarometer, textViewMsg;
+    private TextView textViewBattery, textViewHora;
+
     private ActivitySensadoBinding binding;
 
     AmbientModeSupport.AmbientController controller;
@@ -41,6 +47,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     Intent intentServicioDatos;
 
     String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg;
+    SimpleDateFormat sdf;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +56,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         binding = ActivitySensadoBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        textViewBattery = findViewById(R.id.textViewBattery);
+        textViewHora = findViewById(R.id.textViewHora);
         textViewAcceleration = findViewById(R.id.textViewAcceleration);
         textViewGyroscope = findViewById(R.id.textViewGyroscope);
         textViewBarometer = findViewById(R.id.textViewBarometer);
@@ -67,6 +76,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 refreshDisplayAndSetNextUpdate();
             }
         };
+
+        sdf = new SimpleDateFormat("HH:mm", Locale.UK);
 
         ambientUpdateAlarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, AMBIENT_INTERVAL_MS, AMBIENT_INTERVAL_MS, ambientUpdatePendingIntent);
         crearServicio();
@@ -92,6 +103,13 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     private void refreshDisplayAndSetNextUpdate() {
         // Implement data retrieval and update the screen
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = registerReceiver(null, ifilter);
+        String sBateria = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) + " %";
+        textViewBattery.setText(sBateria);
+
+        textViewHora.setText(sdf.format(new Date()));
+
         textViewAcceleration.setText(sMsgAccelerometer);
         textViewGyroscope.setText(sMsgGyroscope);
         textViewBarometer.setText(sMsgBarometer);

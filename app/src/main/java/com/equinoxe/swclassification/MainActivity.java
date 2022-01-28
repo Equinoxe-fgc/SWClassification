@@ -7,8 +7,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Spinner;
-import android.widget.TextView;
-
 import com.equinoxe.swclassification.databinding.ActivityMainBinding;
 
 public class MainActivity extends Activity {
@@ -19,7 +17,7 @@ public class MainActivity extends Activity {
     private Spinner spinnerDevice;
     private Spinner spinnerThreads;
 
-    private Classifier.Model model = Classifier.Model.QUANTIZED_EFFICIENTNET;
+    private Classifier.Model model = Classifier.Model.QUANT_EFF;
     private Classifier.Device device = Classifier.Device.CPU;
     private int numThreads = -1;
 
@@ -70,8 +68,22 @@ public class MainActivity extends Activity {
             }
         });
 
-        model = Classifier.Model.valueOf(spinnerModel.getSelectedItem().toString().toUpperCase());
-        device = Classifier.Device.valueOf(spinnerDevice.getSelectedItem().toString());
+        /*SharedPreferences pref = getApplicationContext().getSharedPreferences("Settings", MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.clear();
+        editor.commit();*/
+
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("Settings", MODE_PRIVATE);
+        model = Classifier.Model.valueOf(pref.getString("Model", Classifier.Model.QUANT_EFF.toString()));
+        device = Classifier.Device.valueOf(pref.getString("Device", Classifier.Device.CPU.toString()));
+        numThreads = pref.getInt("Threads", 1) + 1;
+
+        spinnerModel.setSelection(model.ordinal());
+        spinnerDevice.setSelection(device.ordinal());
+        spinnerThreads.setSelection(numThreads - 1);
+
+        //model = Classifier.Model.valueOf(spinnerModel.getSelectedItem().toString().toUpperCase());
+        //device = Classifier.Device.valueOf(spinnerDevice.getSelectedItem().toString());
     }
 
     public void onStartClick(View v) {
@@ -80,7 +92,7 @@ public class MainActivity extends Activity {
 
         editor.putString("Model", model.name());
         editor.putString("Device", device.name());
-        editor.putInt("Threads", numThreads);
+        editor.putInt("Threads", numThreads - 1);
         editor.apply();
 
         Intent intent = new Intent(this, Sensado.class);

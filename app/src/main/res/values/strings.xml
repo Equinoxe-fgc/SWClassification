@@ -4,21 +4,21 @@
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.
     -->
-    <string name="VERSION_DATE">26/01/2022</string>
+    <string name="VERSION_DATE">28/01/2022</string>
 
     <string name="title_activity_sensado">Sensado</string>
 
     <string name="START">Start</string>
     <string name="STOP">Stop</string>
-    <string name="MODEL">Model:</string>
-    <string name="DEVICE">Device:</string>
-    <string name="THREADS">Threads:</string>
+    <string name="MODEL">Model</string>
+    <string name="DEVICE">Device</string>
+    <string name="THREADS">Threads</string>
 
     <string-array name="tfe_ic_models" translatable="false">
-        <item>Quantized_EfficientNet</item>
-        <item>Float_EfficientNet</item>
-        <item>Quantized_MobileNet</item>
-        <item>Float_MobileNet</item>
+        <item>Quant_Eff</item>
+        <item>Float_Eff</item>
+        <item>Quant_Mob</item>
+        <item>Float_Mob</item>
     </string-array>
 
     <string-array name="tfe_ic_devices" translatable="false">

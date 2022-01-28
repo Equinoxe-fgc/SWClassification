@@ -54,7 +54,7 @@ public class ServiceData extends Service implements SensorEventListener {
     int iPosDataGyroscope = 0;
     int iPosDataBarometer = 0;
 
-    private Classifier.Model model = Classifier.Model.QUANTIZED_EFFICIENTNET;
+    private Classifier.Model model = Classifier.Model.QUANT_EFF;
     private Classifier.Device device = Classifier.Device.CPU;
     private int numThreads = -1;
     private Classifier classifier;
@@ -76,7 +76,7 @@ public class ServiceData extends Service implements SensorEventListener {
         df = new DecimalFormat("###.##");
 
         SharedPreferences pref = getApplicationContext().getSharedPreferences("Settings", MODE_PRIVATE);
-        model = Classifier.Model.valueOf(pref.getString("Model", Classifier.Model.QUANTIZED_EFFICIENTNET.toString()));
+        model = Classifier.Model.valueOf(pref.getString("Model", Classifier.Model.QUANT_EFF.toString()));
         device = Classifier.Device.valueOf(pref.getString("Device", Classifier.Device.CPU.toString()));
         numThreads = pref.getInt("Threads", 1);
 
@@ -84,9 +84,6 @@ public class ServiceData extends Service implements SensorEventListener {
             classifier = Classifier.create(this, model, device, numThreads);
         } catch (IOException | IllegalArgumentException e) {
         }
-
-        rgbFrameBitmap = Bitmap.createBitmap(iTamBuffer, 1, Bitmap.Config.ARGB_8888);
-        rgbBytes = new int[iTamBuffer * 1];  // Ancho * alto
     }
 
     // Handler that receives messages from the thread
@@ -181,6 +178,9 @@ public class ServiceData extends Service implements SensorEventListener {
             dataBarometer[i] = new SensorData();
         }
 
+        rgbFrameBitmap = Bitmap.createBitmap(iTamBuffer, 1, Bitmap.Config.ARGB_8888);
+        rgbBytes = new int[iTamBuffer * 1];  // Ancho * alto
+
         controlSensors(SENSORS_ON);
 
         return START_NOT_STICKY;
@@ -273,6 +273,7 @@ public class ServiceData extends Service implements SensorEventListener {
 
         controlSensors(SENSORS_OFF);
         timerUpdateData.cancel();
+        timerClassify.cancel();
         wakeLock.release();
     }
 

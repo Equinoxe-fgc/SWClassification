@@ -40,10 +40,10 @@ public abstract class Classifier {
 
     /** The model type used for classification. */
     public enum Model {
-        FLOAT_MOBILENET,
-        QUANTIZED_MOBILENET,
-        FLOAT_EFFICIENTNET,
-        QUANTIZED_EFFICIENTNET
+        QUANT_EFF, // QUANTIZED_EFFICIENTNET,
+        FLOAT_EFF, // FLOAT_EFFICIENTNET,
+        QUANT_MOB, // QUANTIZED_MOBILENET,
+        FLOAT_MOB  // FLOAT_MOBILENET
     }
 
     /** The runtime device type used for executing classification. */
@@ -99,13 +99,13 @@ public abstract class Classifier {
      */
     public static Classifier create(Service activity, Model model, Device device, int numThreads)
             throws IOException {
-        if (model == Model.QUANTIZED_MOBILENET) {
+        if (model == Model.QUANT_MOB) {
             return new ClassifierQuantizedMobileNet(activity, device, numThreads);
-        } else if (model == Model.FLOAT_MOBILENET) {
+        } else if (model == Model.FLOAT_MOB) {
             return new ClassifierFloatMobileNet(activity, device, numThreads);
-        } else if (model == Model.FLOAT_EFFICIENTNET) {
+        } else if (model == Model.FLOAT_EFF) {
             return new ClassifierFloatEfficientNet(activity, device, numThreads);
-        } else if (model == Model.QUANTIZED_EFFICIENTNET) {
+        } else if (model == Model.QUANT_EFF) {
             return new ClassifierQuantizedEfficientNet(activity, device, numThreads);
         } else {
             throw new UnsupportedOperationException();
