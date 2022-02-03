@@ -1,11 +1,21 @@
 package com.equinoxe.swclassification;
 
+import static java.lang.Math.round;
+
 public class SensorData {
     private long []timeStamp = new long[1];
     private float v1;
     private float v2;
     private float v3;
     private double dModule;
+    private float fRange;
+    private float fFactor;
+
+    public SensorData (float fRange) {
+        this.fRange = fRange;
+
+        fFactor = 255.0f / (fFactor - (-fFactor));
+    }
 
     public void setData(long timeStamp, float []values) {
         this.timeStamp[0] = timeStamp;
@@ -55,23 +65,12 @@ public class SensorData {
         return dModule;
     }
 
-    public int getQuantizeValueAccelerometer() {
-        return 0xff000000 | ((getQuantizedValueA(v1) << 6) & 0xff0000) | ((getQuantizedValueA(v2) >> 2) & 0xff00) | ((getQuantizedValueA(v3) >> 10) & 0xff);
+    public int getQuantizeValue() {
+        return 0xff000000 | ((getQuantizedValue(v1) << 16) & 0xff0000) | ((getQuantizedValue(v2) << 8) & 0xff00) | ((getQuantizedValue(v3)));
     }
 
-    public int getQuantizeValueGyroscope() {
-        return 0xff000000 | ((getQuantizedValueG(v1) << 16) & 0xff0000) | ((getQuantizedValueG(v2) << 8) & 0xff00) | (getQuantizedValueG(v3));
-    }
-
-    private int getQuantizedValueA (float valueIn) {
-        int valueOut = 0;
-
-        return valueOut;
-    }
-
-    private int getQuantizedValueG (float valueIn) {
-        int valueOut = 0;
-
+    private int getQuantizedValue (float valueIn) {
+        int valueOut = Math.round((valueIn - (-fRange)) * fFactor);
         return valueOut;
     }
 }

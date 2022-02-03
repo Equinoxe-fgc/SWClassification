@@ -62,6 +62,11 @@ public class ServiceData extends Service implements SensorEventListener {
     private Bitmap rgbFrameBitmap = null;
     private int[] rgbBytes = null;
 
+    Sensor sensorAccelerometer = null;
+    Sensor sensorGyroscope = null;
+    Sensor sensorBarometer = null;
+
+
     @Override
     public void onCreate() {
         HandlerThread thread = new HandlerThread("ServiceData", HandlerThread.MIN_PRIORITY);
@@ -167,15 +172,21 @@ public class ServiceData extends Service implements SensorEventListener {
         timerClassify = new Timer();
         timerClassify.scheduleAtFixedRate(timerTaskClassify, CLASSIFY_INTERVAL_TIME, CLASSIFY_INTERVAL_TIME);
 
+        sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        sensorBarometer = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+
         iTamBuffer = SAMPLES_PER_SECOND_GAME * WINDOW_TIME/1000;
         dataAccelerometer = new SensorData[iTamBuffer];
         dataGyroscope = new SensorData[iTamBuffer];
-        dataBarometer = new SensorData[iTamBuffer];
+        if (sensorBarometer != null)
+            dataBarometer = new SensorData[iTamBuffer];
 
         for (int i = 0; i < iTamBuffer; i++) {
-            dataAccelerometer[i] = new SensorData();
-            dataGyroscope[i] = new SensorData();
-            dataBarometer[i] = new SensorData();
+            dataAccelerometer[i] = new SensorData(sensorAccelerometer.getMaximumRange());
+            dataGyroscope[i] = new SensorData(sensorGyroscope.getMaximumRange());
+            if (sensorBarometer != null)
+                dataBarometer[i] = new SensorData(sensorBarometer.getMaximumRange());
         }
 
         rgbFrameBitmap = Bitmap.createBitmap(iTamBuffer, 1, Bitmap.Config.ARGB_8888);
@@ -192,15 +203,11 @@ public class ServiceData extends Service implements SensorEventListener {
         for (int i = 0; i < iTamBuffer; i++) {
             data = dataAccelerometer[iPosDataAccelerometer];
             iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
-            rgbBytes[i] = data.getQuantizeValueAccelerometer();
+            rgbBytes[i] = data.getQuantizeValue();
         }
     }
 
     private void controlSensors(boolean bSensors_ON) {
-            Sensor sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            Sensor sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-            Sensor sensorBarometer = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
-
             if (bSensors_ON) {
                 sensorManager.registerListener(this, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
                 sensorManager.registerListener(this, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
