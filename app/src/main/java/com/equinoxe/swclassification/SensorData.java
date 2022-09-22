@@ -65,6 +65,7 @@ public class SensorData {
         return dModule;
     }
 
+    // TODO: Asegurarse que la CNN está entrenada con valores entre 0 y 255 en las 3 componentes X, Y y Z
     public int getQuantizeValue() {
         return 0xff000000 | ((getQuantizedValue(v1) << 16) & 0xff0000) | ((getQuantizedValue(v2) << 8) & 0xff00) | ((getQuantizedValue(v3)));
     }

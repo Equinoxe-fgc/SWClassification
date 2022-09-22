@@ -31,7 +31,7 @@ public class ServiceData extends Service implements SensorEventListener {
     private final static boolean SENSORS_ON = true;
     private final static boolean SENSORS_OFF = false;
     private static final int SAMPLES_PER_SECOND_GAME = 60;
-    private static final int WINDOW_TIME = (int)TimeUnit.SECONDS.toMillis(5);
+    private static final int WINDOW_TIME = (int)TimeUnit.SECONDS.toMillis(3);
     private static final int CLASSIFY_INTERVAL_TIME = (int)TimeUnit.SECONDS.toMillis(3);
 
     private ServiceHandler mServiceHandler;
@@ -176,6 +176,7 @@ public class ServiceData extends Service implements SensorEventListener {
         sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         sensorBarometer = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
 
+        // TODO: Ajustar tamaño buffer para que coincida con el de la CNN
         iTamBuffer = SAMPLES_PER_SECOND_GAME * WINDOW_TIME/1000;
         dataAccelerometer = new SensorData[iTamBuffer];
         dataGyroscope = new SensorData[iTamBuffer];
@@ -200,6 +201,7 @@ public class ServiceData extends Service implements SensorEventListener {
     private void convertSensorData2RGBBytes() {
         SensorData data;
 
+        // TODO: Convertir el buffer a imagen pero empezando por la muestra más antigua hasta la más nueva para que mantenga la temporalidad
         for (int i = 0; i < iTamBuffer; i++) {
             data = dataAccelerometer[iPosDataAccelerometer];
             iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
