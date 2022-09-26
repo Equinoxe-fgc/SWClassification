@@ -4,9 +4,9 @@ import static java.lang.Math.round;
 
 public class SensorData {
     private long []timeStamp = new long[1];
-    private float v1;
-    private float v2;
-    private float v3;
+    private float vX;
+    private float vY;
+    private float vZ;
     private double dModule;
     private float fRange;
     private float fFactor;
@@ -19,28 +19,28 @@ public class SensorData {
 
     public void setData(long timeStamp, float []values) {
         this.timeStamp[0] = timeStamp;
-        this.v1 = values[0];
+        this.vX = values[0];
         // Se tiene solo un valor si es el HR. Se ponen los otros dos a 0
         if (values.length > 1) {
-            this.v2 = values[1];
-            this.v3 = values[2];
+            this.vY = values[1];
+            this.vZ = values[2];
         } else {
-            this.v2 = 0.0f;
-            this.v3 = 0.0f;
+            this.vY = 0.0f;
+            this.vZ = 0.0f;
         }
     }
 
     public double calculateModuleGravity() {
-        double v1G = v1 / 9.8;
-        double v2G = v2 / 9.8;
-        double v3G = v3 / 9.8;
-        dModule = Math.sqrt(v1G*v1G + v2G*v2G + v3G*v3G);
+        double vXG = vX / 9.8;
+        double vYG = vY / 9.8;
+        double vZG = vZ / 9.8;
+        dModule = Math.sqrt(vXG*vXG + vYG*vYG + vZG*vZG);
 
         return dModule;
     }
 
     public double calculateModule() {
-        dModule = Math.sqrt(v1*v1 + v2*v2 + v3*v3);
+        dModule = Math.sqrt(vX*vX + vY*vY + vZ*vZ);
 
         return dModule;
     }
@@ -50,15 +50,15 @@ public class SensorData {
     }
 
     public float getV1() {
-        return v1;
+        return vX;
     }
 
     public float getV2() {
-        return v2;
+        return vY;
     }
 
     public float getV3() {
-        return v3;
+        return vZ;
     }
 
     public double getModule() {
@@ -67,7 +67,7 @@ public class SensorData {
 
     // TODO: Asegurarse que la CNN está entrenada con valores entre 0 y 255 en las 3 componentes X, Y y Z
     public int getQuantizeValue() {
-        return 0xff000000 | ((getQuantizedValue(v1) << 16) & 0xff0000) | ((getQuantizedValue(v2) << 8) & 0xff00) | ((getQuantizedValue(v3)));
+        return 0xff000000 | ((getQuantizedValue(vX) << 16) & 0xff0000) | ((getQuantizedValue(vY) << 8) & 0xff00) | ((getQuantizedValue(vZ)));
     }
 
     private int getQuantizedValue (float valueIn) {

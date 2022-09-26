@@ -25,6 +25,7 @@ android {
         viewBinding true
         mlModelBinding true
     }
+    namespace 'com.equinoxe.swclassification'
 }
 
 dependencies {

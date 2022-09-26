@@ -111,9 +111,9 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         textViewHora.setText(sdf.format(new Date()));
 
         textViewAcceleration.setText(sMsgAccelerometer);
-        textViewGyroscope.setText(sMsgGyroscope);
+        /*textViewGyroscope.setText(sMsgGyroscope);
         textViewBarometer.setText(sMsgBarometer);
-        textViewMsg.setText(sMsg);
+        textViewMsg.setText(sMsg);*/
 
         /*long timeMs = System.currentTimeMillis();
         // Schedule a new alarm

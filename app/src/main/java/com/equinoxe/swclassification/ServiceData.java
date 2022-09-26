@@ -18,7 +18,13 @@ import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.equinoxe.swclassification.ml.ModeloKerasSequencialBin;
+
+import org.tensorflow.lite.DataType;
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -54,18 +60,16 @@ public class ServiceData extends Service implements SensorEventListener {
     int iPosDataGyroscope = 0;
     int iPosDataBarometer = 0;
 
-    private Classifier.Model model = Classifier.Model.QUANT_EFF;
-    private Classifier.Device device = Classifier.Device.CPU;
-    private int numThreads = -1;
-    private Classifier classifier;
     private Timer timerClassify;
     private Bitmap rgbFrameBitmap = null;
     private int[] rgbBytes = null;
 
     Sensor sensorAccelerometer = null;
-    Sensor sensorGyroscope = null;
-    Sensor sensorBarometer = null;
+    /*Sensor sensorGyroscope = null;
+    Sensor sensorBarometer = null;*/
 
+    ModeloKerasSequencialBin model;
+    TensorBuffer inputFeature0;
 
     @Override
     public void onCreate() {
@@ -80,14 +84,13 @@ public class ServiceData extends Service implements SensorEventListener {
 
         df = new DecimalFormat("###.##");
 
-        SharedPreferences pref = getApplicationContext().getSharedPreferences("Settings", MODE_PRIVATE);
-        model = Classifier.Model.valueOf(pref.getString("Model", Classifier.Model.QUANT_EFF.toString()));
-        device = Classifier.Device.valueOf(pref.getString("Device", Classifier.Device.CPU.toString()));
-        numThreads = pref.getInt("Threads", 1);
-
+        // TODO: Cambiar por el propio
         try {
-            classifier = Classifier.create(this, model, device, numThreads);
-        } catch (IOException | IllegalArgumentException e) {
+            model = ModeloKerasSequencialBin.newInstance(this);
+
+            // Creates inputs for reference.
+            inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);
+        } catch (IOException e) {
         }
     }
 
@@ -140,13 +143,13 @@ public class ServiceData extends Service implements SensorEventListener {
                 msgAccelerometer.arg1 = Sensado.ACELEROMETRO;
                 mServiceHandler.sendMessage(msgAccelerometer);
 
-                Message msgGyroscope = mServiceHandler.obtainMessage();
+                /*Message msgGyroscope = mServiceHandler.obtainMessage();
                 msgGyroscope.arg1 = Sensado.GIROSCOPO;
                 mServiceHandler.sendMessage(msgGyroscope);
 
                 Message msgBarometer = mServiceHandler.obtainMessage();
                 msgBarometer.arg1 = Sensado.BAROMETER;
-                mServiceHandler.sendMessage(msgBarometer);
+                mServiceHandler.sendMessage(msgBarometer);*/
             }
         };
         timerUpdateData = new Timer();
@@ -154,7 +157,9 @@ public class ServiceData extends Service implements SensorEventListener {
 
         final TimerTask timerTaskClassify = new TimerTask() {
             public void run() {
-                if (classifier != null) {
+                // TODO: Modificar todo lo de dentro del if para adaptar al nuevo modelo
+                /*if (classifier != null) {
+
                     controlSensors(SENSORS_OFF);
                     convertSensorData2RGBBytes();
                     controlSensors(SENSORS_ON);
@@ -166,30 +171,31 @@ public class ServiceData extends Service implements SensorEventListener {
                     msgMsg.arg1 = Sensado.MSG;
                     sMsg = results.get(1).getId();
                     mServiceHandler.sendMessage(msgMsg);
-                }
+                }*/
             }
         };
         timerClassify = new Timer();
         timerClassify.scheduleAtFixedRate(timerTaskClassify, CLASSIFY_INTERVAL_TIME, CLASSIFY_INTERVAL_TIME);
 
         sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        sensorBarometer = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+        /*sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        sensorBarometer = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);*/
 
         // TODO: Ajustar tamaño buffer para que coincida con el de la CNN
         iTamBuffer = SAMPLES_PER_SECOND_GAME * WINDOW_TIME/1000;
         dataAccelerometer = new SensorData[iTamBuffer];
-        dataGyroscope = new SensorData[iTamBuffer];
+        /*dataGyroscope = new SensorData[iTamBuffer];
         if (sensorBarometer != null)
-            dataBarometer = new SensorData[iTamBuffer];
+            dataBarometer = new SensorData[iTamBuffer];*/
 
         for (int i = 0; i < iTamBuffer; i++) {
             dataAccelerometer[i] = new SensorData(sensorAccelerometer.getMaximumRange());
-            dataGyroscope[i] = new SensorData(sensorGyroscope.getMaximumRange());
+            /*dataGyroscope[i] = new SensorData(sensorGyroscope.getMaximumRange());
             if (sensorBarometer != null)
-                dataBarometer[i] = new SensorData(sensorBarometer.getMaximumRange());
+                dataBarometer[i] = new SensorData(sensorBarometer.getMaximumRange());*/
         }
 
+        // TODO: Modificar para adaptar
         rgbFrameBitmap = Bitmap.createBitmap(iTamBuffer, 1, Bitmap.Config.ARGB_8888);
         rgbBytes = new int[iTamBuffer * 1];  // Ancho * alto
 
@@ -201,7 +207,7 @@ public class ServiceData extends Service implements SensorEventListener {
     private void convertSensorData2RGBBytes() {
         SensorData data;
 
-        // TODO: Convertir el buffer a imagen pero empezando por la muestra más antigua hasta la más nueva para que mantenga la temporalidad
+        // TODO: Convertir el buffer a al formato necesario que no va a ser una imagen
         for (int i = 0; i < iTamBuffer; i++) {
             data = dataAccelerometer[iPosDataAccelerometer];
             iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
@@ -212,15 +218,15 @@ public class ServiceData extends Service implements SensorEventListener {
     private void controlSensors(boolean bSensors_ON) {
             if (bSensors_ON) {
                 sensorManager.registerListener(this, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-                sensorManager.registerListener(this, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
+                /*sensorManager.registerListener(this, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
                 if (sensorBarometer != null)
-                    sensorManager.registerListener(this, sensorBarometer, SensorManager.SENSOR_DELAY_GAME);
+                    sensorManager.registerListener(this, sensorBarometer, SensorManager.SENSOR_DELAY_GAME);*/
             }
             else {
                 sensorManager.unregisterListener(this, sensorAccelerometer);
-                sensorManager.unregisterListener(this, sensorGyroscope);
+                /*sensorManager.unregisterListener(this, sensorGyroscope);
                 if (sensorBarometer != null)
-                    sensorManager.unregisterListener(this, sensorBarometer);
+                    sensorManager.unregisterListener(this, sensorBarometer);*/
             }
     }
 

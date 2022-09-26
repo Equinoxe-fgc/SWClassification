@@ -27,66 +27,6 @@
             android:onClick="onStartClick"
             android:text="@string/START" />
 
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" >
-
-                <TextView
-                    android:id="@+id/textViewModel"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/MODEL"
-                    android:textAlignment="center"
-                    android:translationX="10dp" />
-
-                <Spinner
-                    android:id="@+id/spinner_model"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:entries="@array/tfe_ic_models"
-                    android:textAlignment="center" />
-
-                <TextView
-                    android:id="@+id/textViewDevice"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/DEVICE"
-                    android:textAlignment="center"
-                    android:translationX="10dp" />
-
-                <Spinner
-                    android:id="@+id/spinner_device"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:entries="@array/tfe_ic_devices"
-                    android:textAlignment="center" />
-
-                <TextView
-                    android:id="@+id/textViewThreads"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/THREADS"
-                    android:textAlignment="center"
-                    android:translationX="10dp" />
-
-                <Spinner
-                    android:id="@+id/spinner_threads"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:entries="@array/tfe_ic_threads"
-                    android:textAlignment="center" />
-
-            </LinearLayout>
-        </ScrollView>
-
     </LinearLayout>
 
 </androidx.wear.widget.BoxInsetLayout>
