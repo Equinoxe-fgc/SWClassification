@@ -2,11 +2,8 @@ package com.equinoxe.swclassification;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Spinner;
 import com.equinoxe.swclassification.databinding.ActivityMainBinding;
 
 public class MainActivity extends Activity {

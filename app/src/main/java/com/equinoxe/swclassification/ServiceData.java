@@ -201,11 +201,11 @@ public class ServiceData extends Service implements SensorEventListener {
     public byte[] SensorDataArray2ByteArray(@NonNull SensorData[] values){
         SensorData value;
         int iPos;
-        ByteBuffer buffer = ByteBuffer.allocate(3 * values.length);
+        ByteBuffer buffer = ByteBuffer.allocate(3 * values.length * Float.BYTES);
 
         // Va tomando las muestras de la más nueva a la más antigua de forma circular
         for (int i = 0; i < values.length; i++) {
-            iPos =  (iPosDataAccelerometer - i - 1 > 0)?(iPosDataAccelerometer - i - 1):(values.length + iPosDataAccelerometer - i - 1);
+            iPos =  (iPosDataAccelerometer - i - 1 >= 0)?(iPosDataAccelerometer - i - 1):(values.length + iPosDataAccelerometer - i - 1);
             value = values[iPos];
 
             buffer.putFloat(value.getX());
