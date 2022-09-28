@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.view.View;
 import android.widget.TextView;
 
@@ -24,7 +26,10 @@ import java.util.concurrent.TimeUnit;
 public class Sensado extends FragmentActivity implements AmbientModeSupport.AmbientCallbackProvider {
     private static final String AMBIENT_UPDATE_ACTION = "com.equinoxe.swclassification.action.AMBIENT_UPDATE";
     public static final String NOTIFICATION = "com.equinoxe.swclassification.NOTIFICACION";
-    public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(60);
+    public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(3);
+
+    public static final String CLASS_OTHER = "other";
+    public static final String CLASS_BRUSH = "brush_teeth";
 
     final static int ACELEROMETRO = 0;
     final static int GIROSCOPO    = 1;
@@ -174,6 +179,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                         break;
                     case MSG:
                         sMsg = sCadena;
+                        if (sCadena.compareTo(CLASS_BRUSH) == 0)
+                            vibrate();
                         break;
                         /*case MAGNETOMETRO:
                             sMsgMagnetometer = sCadena;
@@ -185,6 +192,12 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 }
         }
     };
+
+    private void vibrate() {
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        v.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE));
+    }
+
 
     private void crearServicio() {
         intentServicioDatos = new Intent(this, ServiceData.class);

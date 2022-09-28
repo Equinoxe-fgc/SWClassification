@@ -188,10 +188,10 @@ public class ServiceData extends Service implements SensorEventListener {
 
         switch (iClass) {
             case 0:
-                sMsg = "other";
+                sMsg = Sensado.CLASS_OTHER;
                 break;
             case 1:
-                sMsg = "brush_teeth";
+                sMsg = Sensado.CLASS_BRUSH;
                 break;
         }
 
@@ -231,10 +231,11 @@ public class ServiceData extends Service implements SensorEventListener {
             ModeloKerasSequencialBin.Outputs outputs = model.process(inputFeature0);
             TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
 
-            // TODO: Probar si así funciona
-            String sDataType = outputFeature0.getDataType().toString();
             float[] data = outputFeature0.getFloatArray();
-            iFinalClass = (int) data[0];
+            if (data[0] > data[1])
+                iFinalClass = 0;
+            else
+                iFinalClass = 1;
 
             // Releases model resources if no longer used.
             model.close();
