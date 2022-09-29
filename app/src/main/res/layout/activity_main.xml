@@ -27,6 +27,25 @@
             android:onClick="onStartClick"
             android:text="@string/START" />
 
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/ACCELOROMETER"
+            android:textAlignment="center" />
+
+        <TextView
+            android:id="@+id/textViewRange"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center" />
+
+        <TextView
+            android:id="@+id/textViewResolution"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center" />
+
     </LinearLayout>
 
 </androidx.wear.widget.BoxInsetLayout>

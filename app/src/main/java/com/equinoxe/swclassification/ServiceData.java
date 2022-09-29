@@ -7,6 +7,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -23,8 +25,14 @@ import com.equinoxe.swclassification.ml.ModeloKerasSequencialBin;
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
+import java.io.FileOutputStream;
+import java.io.IOError;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -35,13 +43,23 @@ public class ServiceData extends Service implements SensorEventListener {
     private static final int SAMPLES_PER_SECOND = 32;
     private static final int PERIOD = 1000000 / SAMPLES_PER_SECOND;
     private static final int WINDOW_TIME = (int)TimeUnit.SECONDS.toMillis(3);
-    private static final int CLASSIFY_INTERVAL_TIME = (int)TimeUnit.SECONDS.toMillis(3);
+    private static final int CLASSIFY_INTERVAL_TIME = (int)TimeUnit.SECONDS.toMillis(1);
+
+    private static final float CNN_MAX_VALUE_IN = 2.0F;
+
+
+    private float []fMinValues = {10000.0F, 10000.0F, 10000.0F};
+    private float []fMaxValues = {-10000.0F, -10000.0F, -10000.0F};
+
+    float fRangeAccelerometer;
+    float fAdaptationFactor;
 
     private ServiceHandler mServiceHandler;
     private SensorManager sensorManager;
 
     private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer;
     private String sMsg;
+    private String sMsgMinValues, sMsgMaxValues;
 
     PowerManager powerManager;
     PowerManager.WakeLock wakeLock;
@@ -67,6 +85,8 @@ public class ServiceData extends Service implements SensorEventListener {
     /*ModeloKerasSequencialBin model;
     TensorBuffer inputFeature0;*/
 
+    FileOutputStream fOutDataLog;
+
     @Override
     public void onCreate() {
         HandlerThread thread = new HandlerThread("ServiceData", HandlerThread.MIN_PRIORITY);
@@ -78,7 +98,7 @@ public class ServiceData extends Service implements SensorEventListener {
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
-        df = new DecimalFormat("###.##");
+        df = new DecimalFormat("##.###");
     }
 
     // Handler that receives messages from the thread
@@ -100,8 +120,14 @@ public class ServiceData extends Service implements SensorEventListener {
                     publishSensorValues(Sensado.BAROMETER, sMsgBarometer);
                     break;*/
                 case Sensado.MSG:
-                        publishSensorValues(Sensado.MSG, sMsg);
-                        break;
+                    publishSensorValues(Sensado.MSG, sMsg);
+                    break;
+                case Sensado.MIN_VALUE:
+                    publishSensorValues(Sensado.MIN_VALUE, sMsgMinValues);
+                    break;
+                case Sensado.MAX_VALUE:
+                    publishSensorValues(Sensado.MAX_VALUE, sMsgMaxValues);
+                    break;
                 /*case Sensado.MAGNETOMETRO:
                     publishSensorValues(Sensado.MAGNETOMETRO, msg.arg2, sCadenaMagnetometro);
                     break;
@@ -124,6 +150,12 @@ public class ServiceData extends Service implements SensorEventListener {
             Log.e("NullPointerException", "ServiceDatosInternalSensor - onStartCommand");
         }
 
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmm", Locale.UK);
+        String currentDateandTime = sdf.format(new Date());
+        try {
+            fOutDataLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_DataLog.txt", true);
+        } catch (IOException e) {}
+
         final TimerTask timerTaskUpdateData = new TimerTask() {
             public void run() {
                 Message msgAccelerometer = mServiceHandler.obtainMessage();
@@ -144,13 +176,23 @@ public class ServiceData extends Service implements SensorEventListener {
 
         final TimerTask timerTaskClassify = new TimerTask() {
             public void run() {
-                controlSensors(SENSORS_OFF);
+                // El muestreo es cada 32ms. Se tarda unos 20ms en copiar el buffer
+                // Debería dar tiempoa copiarlo sin necesidad de parar el sensado
 
+                //long time1 = System.currentTimeMillis();
+                //controlSensors(SENSORS_OFF);
                 byte[] byteArray= SensorDataArray2ByteArray(dataAccelerometer);
+                //controlSensors(SENSORS_ON);
+                //long time2 = System.currentTimeMillis();
+                //long elapsedTime = time2 - time1;
+
+                /*sMsgMaxValues = "Miliseconds: " + elapsedTime;
+                Message msgMaxValue = mServiceHandler.obtainMessage();
+                msgMaxValue.arg1 = Sensado.MAX_VALUE;
+                mServiceHandler.sendMessage(msgMaxValue);*/
+
                 ByteBuffer byteBuffer = ByteBuffer.wrap(byteArray);
                 int iClass = getCNNOutput(byteBuffer);
-
-                controlSensors(SENSORS_ON);
 
                 Message msgMsg = mServiceHandler.obtainMessage();
                 msgMsg.arg1 = Sensado.MSG;
@@ -162,6 +204,8 @@ public class ServiceData extends Service implements SensorEventListener {
         timerClassify.scheduleAtFixedRate(timerTaskClassify, CLASSIFY_INTERVAL_TIME, CLASSIFY_INTERVAL_TIME);
 
         sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        fRangeAccelerometer = sensorAccelerometer.getMaximumRange();
+        fAdaptationFactor = CNN_MAX_VALUE_IN / fRangeAccelerometer;
         /*sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         sensorBarometer = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);*/
 
@@ -206,7 +250,7 @@ public class ServiceData extends Service implements SensorEventListener {
         // Va tomando las muestras de la más nueva a la más antigua de forma circular
         for (int i = 0; i < values.length; i++) {
             iPos =  (iPosDataAccelerometer - i - 1 >= 0)?(iPosDataAccelerometer - i - 1):(values.length + iPosDataAccelerometer - i - 1);
-            value = values[iPos];
+            value = adaptValues(values[iPos]);
 
             buffer.putFloat(value.getX());
             buffer.putFloat(value.getY());
@@ -216,6 +260,23 @@ public class ServiceData extends Service implements SensorEventListener {
         return buffer.array();
     }
 
+
+    private SensorData adaptValues(@NonNull SensorData value){
+        SensorData valueAdaptado = new SensorData();
+        float ejes[] = new float[3];
+
+        ejes[0] = value.getX() * fAdaptationFactor;
+        ejes[1] = value.getY() * fAdaptationFactor;
+        ejes[2] = value.getZ() * fAdaptationFactor;
+
+        valueAdaptado.setData(value.getTimeStamp(), ejes);
+
+        return valueAdaptado;
+    }
+
+    private float adaptValue(float value) {
+        return value * fAdaptationFactor;
+    }
 
     private int getCNNOutput(ByteBuffer byteBuffer) {
         int iFinalClass = 0;
@@ -232,10 +293,7 @@ public class ServiceData extends Service implements SensorEventListener {
             TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
 
             float[] data = outputFeature0.getFloatArray();
-            if (data[0] > data[1])
-                iFinalClass = 0;
-            else
-                iFinalClass = 1;
+            iFinalClass = getFinalClass(data);
 
             // Releases model resources if no longer used.
             model.close();
@@ -247,9 +305,24 @@ public class ServiceData extends Service implements SensorEventListener {
     }
 
 
+    private int getFinalClass(float []weights) {
+        int iFinalClass = 0;
+        float fMaxValue = weights[0];
+
+        for (int iPos= 1; iPos < weights.length; iPos++) {
+            if (weights[iPos] > fMaxValue) {
+                fMaxValue = weights[iPos];
+                iFinalClass = iPos;
+            }
+        }
+
+        return iFinalClass;
+    }
+
     private void controlSensors(boolean bSensors_ON) {
             if (bSensors_ON) {
-                sensorManager.registerListener(this, sensorAccelerometer, PERIOD);
+                //sensorManager.registerListener(this, sensorAccelerometer, PERIOD);
+                sensorManager.registerListener(this, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
                 /*sensorManager.registerListener(this, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
                 if (sensorBarometer != null)
                     sensorManager.registerListener(this, sensorBarometer, SensorManager.SENSOR_DELAY_GAME);*/
@@ -274,9 +347,9 @@ public class ServiceData extends Service implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
         switch (sensorEvent.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
-                sMsgAccelerometer = "A: " + df.format(sensorEvent.values[0]) + " "
-                        + df.format(sensorEvent.values[1]) + " "
-                        + df.format(sensorEvent.values[2]);
+                sMsgAccelerometer = "A: " + df.format(adaptValue(sensorEvent.values[0])) + " "
+                        + df.format(adaptValue(sensorEvent.values[1])) + " "
+                        + df.format(adaptValue(sensorEvent.values[2]));
                 procesarDatosSensados(Sensor.TYPE_ACCELEROMETER, sensorEvent.timestamp, sensorEvent.values);
                 break;
             case Sensor.TYPE_GYROSCOPE:
@@ -302,6 +375,13 @@ public class ServiceData extends Service implements SensorEventListener {
             case Sensor.TYPE_ACCELEROMETER:
                 dataAccelerometer[iPosDataAccelerometer].setData(timeStamp, values);
                 iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
+
+                String sCadenaFichero =  "" + System.currentTimeMillis() + " " + values[0] + " " + values[1] + " " + values[2] + "\n";
+                try {
+                    fOutDataLog.write(sCadenaFichero.getBytes());
+                } catch (Exception e) {}
+
+                // comprobarValoresMinMax(values);
                 break;
             case Sensor.TYPE_GYROSCOPE:
                 dataGyroscope[iPosDataGyroscope].setData(timeStamp, values);
@@ -314,11 +394,54 @@ public class ServiceData extends Service implements SensorEventListener {
         }
     }
 
+    private void comprobarValoresMinMax(float []values) {
+        boolean bMaxChange = false;
+        boolean bMinChange = false;
+
+        for (int i = 0; i < 3; i++) {
+            if (values[i] > fMaxValues[i]) {
+                fMaxValues[i] = values[i];
+                bMaxChange = true;
+            }
+
+            if (values[i] < fMinValues[i]) {
+                fMinValues[i] = values[i];
+                bMinChange = true;
+            }
+        }
+
+        if (bMaxChange) {
+            sMsgMaxValues = "A Max: " + df.format(fMaxValues[0]) + " "
+                    + df.format(fMaxValues[1]) + " "
+                    + df.format(fMaxValues[2]);
+
+            Message msgMaxValue = mServiceHandler.obtainMessage();
+            msgMaxValue.arg1 = Sensado.MAX_VALUE;
+            mServiceHandler.sendMessage(msgMaxValue);
+        }
+
+        if (bMinChange) {
+            sMsgMinValues = "A Min: " + df.format(fMinValues[0]) + " "
+                    + df.format(fMinValues[1]) + " "
+                    + df.format(fMinValues[2]);
+
+            Message msgMinValue = mServiceHandler.obtainMessage();
+            msgMinValue.arg1 = Sensado.MIN_VALUE;
+            mServiceHandler.sendMessage(msgMinValue);
+        }
+    }
+
+
     @Override
     public void onDestroy() {
         super.onDestroy();
 
         controlSensors(SENSORS_OFF);
+
+        try {
+            fOutDataLog.close();
+        } catch (Exception e) {}
+
         timerUpdateData.cancel();
         timerClassify.cancel();
         wakeLock.release();

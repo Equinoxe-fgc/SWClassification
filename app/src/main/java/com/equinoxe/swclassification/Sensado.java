@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class Sensado extends FragmentActivity implements AmbientModeSupport.AmbientCallbackProvider {
     private static final String AMBIENT_UPDATE_ACTION = "com.equinoxe.swclassification.action.AMBIENT_UPDATE";
     public static final String NOTIFICATION = "com.equinoxe.swclassification.NOTIFICACION";
-    public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(3);
+    public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
 
     public static final String CLASS_OTHER = "other";
     public static final String CLASS_BRUSH = "brush_teeth";
@@ -38,8 +38,11 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     final static int BAROMETER    = 4;
     final static int ERROR        = 100;
     final static int MSG          = 200;
+    final static int MIN_VALUE    = 300;
+    final static int MAX_VALUE    = 400;
 
     private TextView textViewAcceleration, textViewGyroscope, textViewBarometer, textViewMsg;
+    private TextView textViewMinValues, textViewMaxValues;
     private TextView textViewBattery, textViewHora;
 
     private ActivitySensadoBinding binding;
@@ -51,8 +54,12 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     Intent intentServicioDatos;
 
-    String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg;
+    private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg;
+    private String sMsgMinValues, sMsgMaxValues;
+
     SimpleDateFormat sdf;
+
+    int iDetectCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +74,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         textViewGyroscope = findViewById(R.id.textViewGyroscope);
         textViewBarometer = findViewById(R.id.textViewBarometer);
         textViewMsg = findViewById(R.id.textViewMsg);
+        textViewMinValues = findViewById(R.id.textViewMinValues);
+        textViewMaxValues = findViewById(R.id.textViewMaxValues);
 
         registerReceiver(receiver, new IntentFilter(NOTIFICATION));
 
@@ -119,6 +128,9 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         /*textViewGyroscope.setText(sMsgGyroscope);
         textViewBarometer.setText(sMsgBarometer);*/
         textViewMsg.setText(sMsg);
+
+        textViewMaxValues.setText(sMsgMaxValues);
+        textViewMinValues.setText(sMsgMinValues);
 
         /*long timeMs = System.currentTimeMillis();
         // Schedule a new alarm
@@ -178,9 +190,11 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                         sMsgBarometer = sCadena;
                         break;
                     case MSG:
-                        sMsg = sCadena;
-                        if (sCadena.compareTo(CLASS_BRUSH) == 0)
-                            vibrate();
+                        sMsg = sCadena + " - " + iDetectCount;
+                        if (sCadena.compareTo(CLASS_BRUSH) == 0) {
+                            iDetectCount++;
+                            //vibrate();
+                        }
                         break;
                         /*case MAGNETOMETRO:
                             sMsgMagnetometer = sCadena;
@@ -188,6 +202,12 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                         case HEART_RATE:
                             sMsgHR = sCadena;
                             break;*/
+                    case MAX_VALUE:
+                        sMsgMaxValues = sCadena;
+                        break;
+                    case MIN_VALUE:
+                        sMsgMinValues = sCadena;
+                        break;
                     }
                 }
         }
