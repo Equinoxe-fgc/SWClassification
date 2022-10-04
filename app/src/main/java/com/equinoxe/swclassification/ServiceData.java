@@ -321,8 +321,8 @@ public class ServiceData extends Service implements SensorEventListener {
 
     private void controlSensors(boolean bSensors_ON) {
             if (bSensors_ON) {
-                //sensorManager.registerListener(this, sensorAccelerometer, PERIOD);
-                sensorManager.registerListener(this, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+                sensorManager.registerListener(this, sensorAccelerometer, PERIOD);
+                //sensorManager.registerListener(this, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
                 /*sensorManager.registerListener(this, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
                 if (sensorBarometer != null)
                     sensorManager.registerListener(this, sensorBarometer, SensorManager.SENSOR_DELAY_GAME);*/
@@ -374,9 +374,15 @@ public class ServiceData extends Service implements SensorEventListener {
         switch (iSensor) {
             case Sensor.TYPE_ACCELEROMETER:
                 dataAccelerometer[iPosDataAccelerometer].setData(timeStamp, values);
+                SensorData data = dataAccelerometer[iPosDataAccelerometer];
+
+                // Si es el acelerómetro se le quita el sesgo de la gravedad y se satura
+                dataAccelerometer[iPosDataAccelerometer].deleteGravityBias();
+                dataAccelerometer[iPosDataAccelerometer].saturate();
+
                 iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
 
-                String sCadenaFichero =  "" + System.currentTimeMillis() + " " + values[0] + " " + values[1] + " " + values[2] + "\n";
+                String sCadenaFichero =  "" + timeStamp + " " + data.getX() + " " + data.getY() + " " + data.getZ() + "\n";
                 try {
                     fOutDataLog.write(sCadenaFichero.getBytes());
                 } catch (Exception e) {}

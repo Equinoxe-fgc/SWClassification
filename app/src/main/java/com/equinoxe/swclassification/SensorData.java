@@ -3,6 +3,8 @@ package com.equinoxe.swclassification;
 import static java.lang.Math.round;
 
 public class SensorData {
+    private final static float SATURATE_VALUE = 2.0F;
+
     private long []timeStamp = new long[1];
     private float vX;
     private float vY;
@@ -21,6 +23,29 @@ public class SensorData {
             this.vY = 0.0f;
             this.vZ = 0.0f;
         }
+    }
+
+    public void deleteGravityBias() {
+        vX = vX / 9.8F;
+        vY = vY / 9.8F;
+        vZ = vZ / 9.8F;
+    }
+
+    public void saturate() {
+            if (vX > SATURATE_VALUE)
+                vX = SATURATE_VALUE;
+            else if (vX < -SATURATE_VALUE)
+                vX = -SATURATE_VALUE;
+
+        if (vY > SATURATE_VALUE)
+            vY = SATURATE_VALUE;
+        else if (vY < -SATURATE_VALUE)
+            vY = -SATURATE_VALUE;
+
+        if (vZ > SATURATE_VALUE)
+            vZ = SATURATE_VALUE;
+        else if (vZ < -SATURATE_VALUE)
+            vZ = -SATURATE_VALUE;
     }
 
     public double calculateModuleGravity() {
