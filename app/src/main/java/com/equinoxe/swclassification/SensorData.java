@@ -79,6 +79,16 @@ public class SensorData {
         return vZ;
     }
 
+    public float []getValues() {
+        float []values = new float[3];
+
+        values[0] = vX;
+        values[1] = vY;
+        values[2] = vZ;
+
+        return values;
+    }
+
     public double getModule() {
         return dModule;
     }

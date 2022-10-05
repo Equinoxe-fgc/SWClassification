@@ -40,16 +40,18 @@ import java.util.concurrent.TimeUnit;
 public class ServiceData extends Service implements SensorEventListener {
     private final static boolean SENSORS_ON = true;
     private final static boolean SENSORS_OFF = false;
-    private static final int SAMPLES_PER_SECOND = 32;
+    private static final int SAMPLES_PER_SECOND = 100;  // Aproximadamente con el SENSOR_DELAY_GAME
+    private static final int SAMPLES_CNN = 93;
     private static final int PERIOD = 1000000 / SAMPLES_PER_SECOND;
-    private static final int WINDOW_TIME = (int)TimeUnit.SECONDS.toMillis(3);
+    private static final int WINDOW_TIME = (int)TimeUnit.SECONDS.toMillis(6);   // Se hace el buffer más grande para poder tener una ventana más grande
+    private static final int WINDOW_TIME_AUX = (int)TimeUnit.SECONDS.toMillis(4);
     private static final int CLASSIFY_INTERVAL_TIME = (int)TimeUnit.SECONDS.toMillis(1);
 
     private static final float CNN_MAX_VALUE_IN = 2.0F;
 
 
-    private float []fMinValues = {10000.0F, 10000.0F, 10000.0F};
-    private float []fMaxValues = {-10000.0F, -10000.0F, -10000.0F};
+    /*private float []fMinValues = {10000.0F, 10000.0F, 10000.0F};
+    private float []fMaxValues = {-10000.0F, -10000.0F, -10000.0F};*/
 
     float fRangeAccelerometer;
     float fAdaptationFactor;
@@ -70,6 +72,7 @@ public class ServiceData extends Service implements SensorEventListener {
 
     int iTamBuffer;
     SensorData []dataAccelerometer;
+    SensorData []dataAccelerometerAux;  // Necesaria para coger las muestras para pasarlas a la CNN
     SensorData []dataGyroscope;
     SensorData []dataBarometer;
     int iPosDataAccelerometer = 0;
@@ -177,7 +180,7 @@ public class ServiceData extends Service implements SensorEventListener {
         final TimerTask timerTaskClassify = new TimerTask() {
             public void run() {
                 // El muestreo es cada 32ms. Se tarda unos 20ms en copiar el buffer
-                // Debería dar tiempoa copiarlo sin necesidad de parar el sensado
+                // Debería dar tiempo a copiarlo sin necesidad de parar el sensado
 
                 //long time1 = System.currentTimeMillis();
                 //controlSensors(SENSORS_OFF);
@@ -201,7 +204,7 @@ public class ServiceData extends Service implements SensorEventListener {
             }
         };
         timerClassify = new Timer();
-        timerClassify.scheduleAtFixedRate(timerTaskClassify, CLASSIFY_INTERVAL_TIME, CLASSIFY_INTERVAL_TIME);
+        timerClassify.scheduleAtFixedRate(timerTaskClassify, WINDOW_TIME, CLASSIFY_INTERVAL_TIME);
 
         sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         fRangeAccelerometer = sensorAccelerometer.getMaximumRange();
@@ -209,8 +212,9 @@ public class ServiceData extends Service implements SensorEventListener {
         /*sensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         sensorBarometer = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);*/
 
-        iTamBuffer = SAMPLES_PER_SECOND * WINDOW_TIME/1000 + 1;
+        iTamBuffer = SAMPLES_PER_SECOND * WINDOW_TIME/1000;
         dataAccelerometer = new SensorData[iTamBuffer];
+
         /*dataGyroscope = new SensorData[iTamBuffer];
         if (sensorBarometer != null)
             dataBarometer = new SensorData[iTamBuffer];*/
@@ -220,6 +224,12 @@ public class ServiceData extends Service implements SensorEventListener {
             /*dataGyroscope[i] = new SensorData(sensorGyroscope.getMaximumRange());
             if (sensorBarometer != null)
                 dataBarometer[i] = new SensorData(sensorBarometer.getMaximumRange());*/
+        }
+
+        int iTamBufferAux = SAMPLES_PER_SECOND * WINDOW_TIME_AUX/1000;
+        dataAccelerometerAux = new SensorData[iTamBufferAux];
+        for (int i = 0; i < iTamBufferAux; i++) {
+            dataAccelerometerAux[i] = new SensorData();
         }
 
         controlSensors(SENSORS_ON);
@@ -245,12 +255,41 @@ public class ServiceData extends Service implements SensorEventListener {
     public byte[] SensorDataArray2ByteArray(@NonNull SensorData[] values){
         SensorData value;
         int iPos;
-        ByteBuffer buffer = ByteBuffer.allocate(3 * values.length * Float.BYTES);
+        long lTimeNS = 0;
+        long lTimeBase = 0;
+
+        // Nos quedamos con la posición del buffer para que se pueda seguir llenando
+        // mientras se hace este procesado
+        int iPosEndWindow = iPosDataAccelerometer;
+
+        ByteBuffer buffer = ByteBuffer.allocate(3 * SAMPLES_CNN * Float.BYTES);
 
         // Va tomando las muestras de la más nueva a la más antigua de forma circular
-        for (int i = 0; i < values.length; i++) {
-            iPos =  (iPosDataAccelerometer - i - 1 >= 0)?(iPosDataAccelerometer - i - 1):(values.length + iPosDataAccelerometer - i - 1);
-            value = adaptValues(values[iPos]);
+        int iNumSamples = 0;
+        while (lTimeNS < 3000000000L) {
+            iPos =  (iPosEndWindow - iNumSamples - 1 >= 0)?(iPosEndWindow - iNumSamples - 1):(values.length + iPosEndWindow - iNumSamples - 1);
+
+            value = values[iPos];
+
+            if (iNumSamples == 0)
+                lTimeBase = value.getTimeStamp();
+            else
+                lTimeNS = lTimeBase - value.getTimeStamp();
+
+            dataAccelerometerAux[iNumSamples].setData(value.getTimeStamp(), value.getValues());
+
+            iNumSamples++;
+        }
+
+        float fSamplingStep = (float)iNumSamples / (float)SAMPLES_CNN;
+        for (int i = 0; i < SAMPLES_CNN; i++) {
+            iPos = (int) ((float)i * fSamplingStep);
+            //value = adaptValues(values[iPos]);
+            value = values[iPos];
+
+            // Si es el acelerómetro se le quita el sesgo de la gravedad y se satura
+            /*value.deleteGravityBias();
+            value.saturate();*/
 
             buffer.putFloat(value.getX());
             buffer.putFloat(value.getY());
@@ -261,7 +300,7 @@ public class ServiceData extends Service implements SensorEventListener {
     }
 
 
-    private SensorData adaptValues(@NonNull SensorData value){
+ /*   private SensorData adaptValues(@NonNull SensorData value){
         SensorData valueAdaptado = new SensorData();
         float ejes[] = new float[3];
 
@@ -276,7 +315,7 @@ public class ServiceData extends Service implements SensorEventListener {
 
     private float adaptValue(float value) {
         return value * fAdaptationFactor;
-    }
+    }*/
 
     private int getCNNOutput(ByteBuffer byteBuffer) {
         int iFinalClass = 0;
@@ -321,8 +360,8 @@ public class ServiceData extends Service implements SensorEventListener {
 
     private void controlSensors(boolean bSensors_ON) {
             if (bSensors_ON) {
-                sensorManager.registerListener(this, sensorAccelerometer, PERIOD);
-                //sensorManager.registerListener(this, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+                //sensorManager.registerListener(this, sensorAccelerometer, PERIOD);
+                sensorManager.registerListener(this, sensorAccelerometer, SensorManager.SENSOR_DELAY_GAME);
                 /*sensorManager.registerListener(this, sensorGyroscope, SensorManager.SENSOR_DELAY_GAME);
                 if (sensorBarometer != null)
                     sensorManager.registerListener(this, sensorBarometer, SensorManager.SENSOR_DELAY_GAME);*/
@@ -347,9 +386,9 @@ public class ServiceData extends Service implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
         switch (sensorEvent.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
-                sMsgAccelerometer = "A: " + df.format(adaptValue(sensorEvent.values[0])) + " "
-                        + df.format(adaptValue(sensorEvent.values[1])) + " "
-                        + df.format(adaptValue(sensorEvent.values[2]));
+                sMsgAccelerometer = "A: " + df.format(sensorEvent.values[0]) + " "
+                        + df.format(sensorEvent.values[1]) + " "
+                        + df.format(sensorEvent.values[2]);
                 procesarDatosSensados(Sensor.TYPE_ACCELEROMETER, sensorEvent.timestamp, sensorEvent.values);
                 break;
             case Sensor.TYPE_GYROSCOPE:
@@ -400,7 +439,7 @@ public class ServiceData extends Service implements SensorEventListener {
         }
     }
 
-    private void comprobarValoresMinMax(float []values) {
+    /*private void comprobarValoresMinMax(float []values) {
         boolean bMaxChange = false;
         boolean bMinChange = false;
 
@@ -435,7 +474,7 @@ public class ServiceData extends Service implements SensorEventListener {
             msgMinValue.arg1 = Sensado.MIN_VALUE;
             mServiceHandler.sendMessage(msgMinValue);
         }
-    }
+    }*/
 
 
     @Override
