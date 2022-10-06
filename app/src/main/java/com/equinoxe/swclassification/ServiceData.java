@@ -89,6 +89,7 @@ public class ServiceData extends Service implements SensorEventListener {
     TensorBuffer inputFeature0;*/
 
     FileOutputStream fOutDataLog;
+    //FileOutputStream fOutBufferCNN;
 
     @Override
     public void onCreate() {
@@ -158,6 +159,10 @@ public class ServiceData extends Service implements SensorEventListener {
         try {
             fOutDataLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_DataLog.txt", true);
         } catch (IOException e) {}
+
+        /*try {
+            fOutBufferCNN = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_BufferCNN.txt", true);
+        } catch (IOException e) {}*/
 
         final TimerTask timerTaskUpdateData = new TimerTask() {
             public void run() {
@@ -232,6 +237,13 @@ public class ServiceData extends Service implements SensorEventListener {
             dataAccelerometerAux[i] = new SensorData();
         }
 
+        /*try {
+            model = ModeloKerasSequencialBin.newInstance(this);
+        } catch (IOException e) {}
+
+        // Creates inputs for reference.
+        inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);*/
+
         controlSensors(SENSORS_ON);
 
         return START_NOT_STICKY;
@@ -264,7 +276,7 @@ public class ServiceData extends Service implements SensorEventListener {
 
         ByteBuffer buffer = ByteBuffer.allocate(3 * SAMPLES_CNN * Float.BYTES);
 
-        // Va tomando las muestras de la más nueva a la más antigua de forma circular
+        // Va tomando las muestras de la más nueva a la más antigua de forma circular hasta cubrir 3 segundos
         int iNumSamples = 0;
         while (lTimeNS < 3000000000L) {
             iPos =  (iPosEndWindow - iNumSamples - 1 >= 0)?(iPosEndWindow - iNumSamples - 1):(values.length + iPosEndWindow - iNumSamples - 1);
@@ -294,6 +306,11 @@ public class ServiceData extends Service implements SensorEventListener {
             buffer.putFloat(value.getX());
             buffer.putFloat(value.getY());
             buffer.putFloat(value.getZ());
+
+            /*String sCadenaFichero =  "" + value.getTimeStamp() + " " + value.getX() + " " + value.getY() + " " + value.getZ() + "\n";
+            try {
+                fOutBufferCNN.write(sCadenaFichero.getBytes());
+            } catch (Exception e) {}*/
         }
 
         return buffer.array();
@@ -319,12 +336,15 @@ public class ServiceData extends Service implements SensorEventListener {
 
     private int getCNNOutput(ByteBuffer byteBuffer) {
         int iFinalClass = 0;
+        ModeloKerasSequencialBin model;
+        TensorBuffer inputFeature0;
 
         try {
-            ModeloKerasSequencialBin model = ModeloKerasSequencialBin.newInstance(this);
+            model = ModeloKerasSequencialBin.newInstance(this);
 
             // Creates inputs for reference.
-            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);
+            inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);
+
             inputFeature0.loadBuffer(byteBuffer);
 
             // Runs model inference and gets result.
@@ -485,6 +505,7 @@ public class ServiceData extends Service implements SensorEventListener {
 
         try {
             fOutDataLog.close();
+            //fOutBufferCNN.close();
         } catch (Exception e) {}
 
         timerUpdateData.cancel();
