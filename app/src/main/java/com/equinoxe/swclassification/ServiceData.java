@@ -25,10 +25,13 @@ import com.equinoxe.swclassification.ml.ModeloKerasSequencialBin;
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
+import java.io.BufferedReader;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -41,7 +44,7 @@ public class ServiceData extends Service implements SensorEventListener {
     private final static boolean SENSORS_ON = true;
     private final static boolean SENSORS_OFF = false;
     private static final int SAMPLES_PER_SECOND = 100;  // Aproximadamente con el SENSOR_DELAY_GAME
-    private static final int SAMPLES_CNN = 93;
+    private static final int SAMPLES_CNN = 97;
     private static final int PERIOD = 1000000 / SAMPLES_PER_SECOND;
     private static final int WINDOW_TIME = (int)TimeUnit.SECONDS.toMillis(6);   // Se hace el buffer más grande para poder tener una ventana más grande
     private static final int WINDOW_TIME_AUX = (int)TimeUnit.SECONDS.toMillis(4);
@@ -90,6 +93,14 @@ public class ServiceData extends Service implements SensorEventListener {
 
     FileOutputStream fOutDataLog;
     //FileOutputStream fOutBufferCNN;
+
+    // Borrar tras prueba
+    /*int iNegativos = 0;
+    int iPositivos = 0;
+    int iFalsoPositivo = 0;
+    int iFalsoNegativo = 0;
+    BufferedReader fInputData, fInputClass;
+    int iClassReal;*/
 
     @Override
     public void onCreate() {
@@ -184,31 +195,37 @@ public class ServiceData extends Service implements SensorEventListener {
 
         final TimerTask timerTaskClassify = new TimerTask() {
             public void run() {
-                // El muestreo es cada 32ms. Se tarda unos 20ms en copiar el buffer
-                // Debería dar tiempo a copiarlo sin necesidad de parar el sensado
-
-                //long time1 = System.currentTimeMillis();
                 //controlSensors(SENSORS_OFF);
-                byte[] byteArray= SensorDataArray2ByteArray(dataAccelerometer);
+                ByteBuffer byteBuffer = SensorDataArray2Buffer(dataAccelerometer);
+                //ByteBuffer byteBuffer = SensorDataArray2Buffer_Test(dataAccelerometer);
                 //controlSensors(SENSORS_ON);
-                //long time2 = System.currentTimeMillis();
-                //long elapsedTime = time2 - time1;
 
-                /*sMsgMaxValues = "Miliseconds: " + elapsedTime;
-                Message msgMaxValue = mServiceHandler.obtainMessage();
-                msgMaxValue.arg1 = Sensado.MAX_VALUE;
-                mServiceHandler.sendMessage(msgMaxValue);*/
-
-                ByteBuffer byteBuffer = ByteBuffer.wrap(byteArray);
                 int iClass = getCNNOutput(byteBuffer);
+
+                /*if (iClassReal != -1) {
+                    int iClass = getCNNOutput(byteBuffer);
+
+                    // Borrar tras prueba
+                    if (iClass == 0 && iClassReal == 0)
+                        iNegativos++;
+                    else if (iClass == 1 && iClassReal == 1)
+                        iPositivos++;
+                    else if (iClass == 0 && iClassReal == 1)
+                        iFalsoNegativo++;
+                    else if (iClass == 1 && iClassReal == 0)
+                        iFalsoPositivo++;
+                }*/
 
                 Message msgMsg = mServiceHandler.obtainMessage();
                 msgMsg.arg1 = Sensado.MSG;
                 sMsg = createMessageClass(iClass);
+                //sMsg = "" + iPositivos + " " + iNegativos + " " + iFalsoPositivo + " " + iFalsoNegativo;
                 mServiceHandler.sendMessage(msgMsg);
             }
         };
         timerClassify = new Timer();
+        // Borrar tras prueba
+        //timerClassify.scheduleAtFixedRate(timerTaskClassify, WINDOW_TIME, 10);
         timerClassify.scheduleAtFixedRate(timerTaskClassify, WINDOW_TIME, CLASSIFY_INTERVAL_TIME);
 
         sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -244,6 +261,14 @@ public class ServiceData extends Service implements SensorEventListener {
         // Creates inputs for reference.
         inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);*/
 
+        // Borrar cuando probado
+        /*try {
+            fInputData = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory() + "/Dataset_032_PAAL.mat.dat"));
+            fInputClass = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory() + "/Dataset_032_PAAL.mat.classbin"));
+        } catch (IOException e) {
+
+        }*/
+
         controlSensors(SENSORS_ON);
 
         return START_NOT_STICKY;
@@ -264,7 +289,43 @@ public class ServiceData extends Service implements SensorEventListener {
         return sMsg;
     }
 
-    public byte[] SensorDataArray2ByteArray(@NonNull SensorData[] values){
+    // Borrar tras prueba
+    /*public ByteBuffer SensorDataArray2Buffer_Test(@NonNull SensorData[] values) {
+        String sLine = null;
+        String sClass = null;
+        String []sDataStrings;
+
+        ByteBuffer buffer = ByteBuffer.allocateDirect(3 * SAMPLES_CNN * Float.BYTES).order(ByteOrder.nativeOrder());
+
+        try {
+            sLine = fInputData.readLine();
+            sClass = fInputClass.readLine();
+        } catch (IOException e) {
+            sLine = null;
+            sClass = null;
+        }
+
+        if (sLine != null) {
+            sDataStrings = sLine.split(" ");
+
+            for (int i = 0; i < sDataStrings.length / 3; i++) {
+                buffer.putFloat(Float.parseFloat(sDataStrings[3 * i]));
+                buffer.putFloat(Float.parseFloat(sDataStrings[3 * i + 1]));
+                buffer.putFloat(Float.parseFloat(sDataStrings[3 * i + 2]));
+            }
+            buffer.rewind();
+        }
+
+        if (sClass != null)
+            iClassReal = Integer.parseInt(sClass);
+        else
+            iClassReal = -1;
+
+        return buffer;
+    }*/
+
+
+    public ByteBuffer SensorDataArray2Buffer(@NonNull SensorData[] values){
         SensorData value;
         int iPos;
         long lTimeNS = 0;
@@ -274,7 +335,7 @@ public class ServiceData extends Service implements SensorEventListener {
         // mientras se hace este procesado
         int iPosEndWindow = iPosDataAccelerometer;
 
-        ByteBuffer buffer = ByteBuffer.allocate(3 * SAMPLES_CNN * Float.BYTES);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(3 * SAMPLES_CNN * Float.BYTES).order(ByteOrder.nativeOrder());
 
         // Va tomando las muestras de la más nueva a la más antigua de forma circular hasta cubrir 3 segundos
         int iNumSamples = 0;
@@ -296,12 +357,8 @@ public class ServiceData extends Service implements SensorEventListener {
         float fSamplingStep = (float)iNumSamples / (float)SAMPLES_CNN;
         for (int i = 0; i < SAMPLES_CNN; i++) {
             iPos = (int) ((float)i * fSamplingStep);
-            //value = adaptValues(values[iPos]);
-            value = values[iPos];
 
-            // Si es el acelerómetro se le quita el sesgo de la gravedad y se satura
-            /*value.deleteGravityBias();
-            value.saturate();*/
+            value = values[iPos];
 
             buffer.putFloat(value.getX());
             buffer.putFloat(value.getY());
@@ -312,27 +369,10 @@ public class ServiceData extends Service implements SensorEventListener {
                 fOutBufferCNN.write(sCadenaFichero.getBytes());
             } catch (Exception e) {}*/
         }
+        buffer.rewind();
 
-        return buffer.array();
+        return buffer;
     }
-
-
- /*   private SensorData adaptValues(@NonNull SensorData value){
-        SensorData valueAdaptado = new SensorData();
-        float ejes[] = new float[3];
-
-        ejes[0] = value.getX() * fAdaptationFactor;
-        ejes[1] = value.getY() * fAdaptationFactor;
-        ejes[2] = value.getZ() * fAdaptationFactor;
-
-        valueAdaptado.setData(value.getTimeStamp(), ejes);
-
-        return valueAdaptado;
-    }
-
-    private float adaptValue(float value) {
-        return value * fAdaptationFactor;
-    }*/
 
     private int getCNNOutput(ByteBuffer byteBuffer) {
         int iFinalClass = 0;
@@ -505,6 +545,10 @@ public class ServiceData extends Service implements SensorEventListener {
 
         try {
             fOutDataLog.close();
+
+            // Borrar cuando probado
+            /*fInputClass.close();
+            fInputData.close();*/
             //fOutBufferCNN.close();
         } catch (Exception e) {}
 

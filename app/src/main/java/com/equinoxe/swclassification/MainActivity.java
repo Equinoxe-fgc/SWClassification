@@ -19,8 +19,6 @@ public class MainActivity extends Activity {
 
     private ActivityMainBinding binding;
 
-    private TextView textViewRange, textViewResolution;
-
     private SensorManager sensorManager;
     Sensor sensorAccelerometer = null;
 
@@ -31,12 +29,7 @@ public class MainActivity extends Activity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        textViewRange = findViewById(R.id.textViewRange);
-        textViewResolution = findViewById(R.id.textViewResolution);
-
         checkForPermissions();
-
-        infoSensores();
 
         /*SharedPreferences pref = getApplicationContext().getSharedPreferences("Settings", MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
@@ -74,16 +67,5 @@ public class MainActivity extends Activity {
             // We don't have permission so prompt the user
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BODY_SENSORS}, 1);
         }
-    }
-
-    public void infoSensores() {
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
-        float fRange = sensorAccelerometer.getMaximumRange();
-        float fResolution = sensorAccelerometer.getResolution();
-
-        textViewRange.setText("Range: " + fRange);
-        textViewResolution.setText("Resolution: " + fResolution);
     }
 }

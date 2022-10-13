@@ -193,7 +193,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                         sMsg = sCadena + " - " + iDetectCount;
                         if (sCadena.compareTo(CLASS_BRUSH) == 0) {
                             iDetectCount++;
-                            //vibrate();
+                            vibrate();
                         }
                         break;
                         /*case MAGNETOMETRO:
