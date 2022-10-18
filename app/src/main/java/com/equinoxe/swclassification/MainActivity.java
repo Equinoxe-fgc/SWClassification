@@ -9,6 +9,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.core.app.ActivityCompat;
@@ -19,8 +20,10 @@ public class MainActivity extends Activity {
 
     private ActivityMainBinding binding;
 
-    private SensorManager sensorManager;
-    Sensor sensorAccelerometer = null;
+    private CheckBox checkBoxOffline, checkBoxLog;
+
+    /*private SensorManager sensorManager;
+    Sensor sensorAccelerometer = null;*/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +31,9 @@ public class MainActivity extends Activity {
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        checkBoxOffline = findViewById(R.id.checkBoxOffline);
+        checkBoxLog = findViewById(R.id.checkBoxLog);
 
         checkForPermissions();
 
@@ -47,6 +53,8 @@ public class MainActivity extends Activity {
         editor.apply();*/
 
         Intent intent = new Intent(this, Sensado.class);
+        intent.putExtra("Offline", checkBoxOffline.isChecked());
+        intent.putExtra("Log", checkBoxLog.isChecked());
         startActivity(intent);
     }
 

@@ -28,7 +28,6 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.IOError;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -52,6 +51,8 @@ public class ServiceData extends Service implements SensorEventListener {
 
     private static final float CNN_MAX_VALUE_IN = 2.0F;
 
+    private static final String FILE_DATA = "Dataset_032_PAAL.mat.dat";
+    private static final String FILE_CLASS = "Dataset_032_PAAL.mat.classbin";
 
     /*private float []fMinValues = {10000.0F, 10000.0F, 10000.0F};
     private float []fMaxValues = {-10000.0F, -10000.0F, -10000.0F};*/
@@ -88,19 +89,21 @@ public class ServiceData extends Service implements SensorEventListener {
     /*Sensor sensorGyroscope = null;
     Sensor sensorBarometer = null;*/
 
-    /*ModeloKerasSequencialBin model;
-    TensorBuffer inputFeature0;*/
+    ModeloKerasSequencialBin model;
+    TensorBuffer inputFeature0;
 
     FileOutputStream fOutDataLog;
     //FileOutputStream fOutBufferCNN;
 
-    // Borrar tras prueba
-    /*int iNegativos = 0;
+    int iNegativos = 0;
     int iPositivos = 0;
     int iFalsoPositivo = 0;
     int iFalsoNegativo = 0;
     BufferedReader fInputData, fInputClass;
-    int iClassReal;*/
+    int iClassReal;
+
+    boolean bOffline, bLog;
+
 
     @Override
     public void onCreate() {
@@ -165,15 +168,22 @@ public class ServiceData extends Service implements SensorEventListener {
             Log.e("NullPointerException", "ServiceDatosInternalSensor - onStartCommand");
         }
 
+        bOffline = intent.getBooleanExtra("Offline", false);
+        bLog = intent.getBooleanExtra("Log", false);
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmm", Locale.UK);
         String currentDateandTime = sdf.format(new Date());
-        try {
-            fOutDataLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_DataLog.txt", true);
-        } catch (IOException e) {}
+        if (bLog) {
+            try {
+                fOutDataLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_DataLog.txt", true);
+            } catch (IOException e) {
+            }
+        }
 
-        /*try {
-            fOutBufferCNN = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_BufferCNN.txt", true);
-        } catch (IOException e) {}*/
+        /*    try {
+                fOutBufferCNN = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_BufferCNN.txt", true);
+            } catch (IOException e) {
+            }*/
 
         final TimerTask timerTaskUpdateData = new TimerTask() {
             public void run() {
@@ -195,38 +205,48 @@ public class ServiceData extends Service implements SensorEventListener {
 
         final TimerTask timerTaskClassify = new TimerTask() {
             public void run() {
+                ByteBuffer byteBuffer;
                 //controlSensors(SENSORS_OFF);
-                ByteBuffer byteBuffer = SensorDataArray2Buffer(dataAccelerometer);
-                //ByteBuffer byteBuffer = SensorDataArray2Buffer_Test(dataAccelerometer);
+                if (bOffline)
+                    byteBuffer = SensorDataArray2Buffer_Offline(dataAccelerometer);
+                else
+                    byteBuffer = SensorDataArray2Buffer(dataAccelerometer);
+                //
                 //controlSensors(SENSORS_ON);
 
-                int iClass = getCNNOutput(byteBuffer);
+                int iClass = -1;
 
-                /*if (iClassReal != -1) {
-                    int iClass = getCNNOutput(byteBuffer);
+                if (bOffline) {
+                    if (iClassReal != -1) {
+                        iClass = getCNNOutput(byteBuffer);
 
-                    // Borrar tras prueba
-                    if (iClass == 0 && iClassReal == 0)
-                        iNegativos++;
-                    else if (iClass == 1 && iClassReal == 1)
-                        iPositivos++;
-                    else if (iClass == 0 && iClassReal == 1)
-                        iFalsoNegativo++;
-                    else if (iClass == 1 && iClassReal == 0)
-                        iFalsoPositivo++;
-                }*/
+                        if (iClass == 0 && iClassReal == 0)
+                            iNegativos++;
+                        else if (iClass == 1 && iClassReal == 1)
+                            iPositivos++;
+                        else if (iClass == 0 && iClassReal == 1)
+                            iFalsoNegativo++;
+                        else if (iClass == 1 && iClassReal == 0)
+                            iFalsoPositivo++;
+                    }
+                } else
+                    iClass = getCNNOutput(byteBuffer);
 
                 Message msgMsg = mServiceHandler.obtainMessage();
                 msgMsg.arg1 = Sensado.MSG;
-                sMsg = createMessageClass(iClass);
-                //sMsg = "" + iPositivos + " " + iNegativos + " " + iFalsoPositivo + " " + iFalsoNegativo;
+                if (bOffline)
+                    sMsg = "P: " + iPositivos + " N: " + iNegativos + " FP: " + iFalsoPositivo + " FN: " + iFalsoNegativo;
+                else
+                    sMsg = createMessageClass(iClass);
                 mServiceHandler.sendMessage(msgMsg);
             }
         };
         timerClassify = new Timer();
-        // Borrar tras prueba
-        //timerClassify.scheduleAtFixedRate(timerTaskClassify, WINDOW_TIME, 10);
-        timerClassify.scheduleAtFixedRate(timerTaskClassify, WINDOW_TIME, CLASSIFY_INTERVAL_TIME);
+
+        if (bOffline)
+            timerClassify.scheduleAtFixedRate(timerTaskClassify, WINDOW_TIME, 10);
+        else
+            timerClassify.scheduleAtFixedRate(timerTaskClassify, WINDOW_TIME, CLASSIFY_INTERVAL_TIME);
 
         sensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         fRangeAccelerometer = sensorAccelerometer.getMaximumRange();
@@ -254,22 +274,23 @@ public class ServiceData extends Service implements SensorEventListener {
             dataAccelerometerAux[i] = new SensorData();
         }
 
-        /*try {
+        try {
             model = ModeloKerasSequencialBin.newInstance(this);
         } catch (IOException e) {}
 
         // Creates inputs for reference.
-        inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);*/
+        inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);
 
-        // Borrar cuando probado
-        /*try {
-            fInputData = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory() + "/Dataset_032_PAAL.mat.dat"));
-            fInputClass = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory() + "/Dataset_032_PAAL.mat.classbin"));
+        if (bOffline) {
+            try {
+            fInputData = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory() + "/" + FILE_DATA));
+            fInputClass = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory() + "/" + FILE_CLASS));
         } catch (IOException e) {
+            }
+        }
 
-        }*/
-
-        controlSensors(SENSORS_ON);
+        if (!bOffline)
+            controlSensors(SENSORS_ON);
 
         return START_NOT_STICKY;
     }
@@ -289,8 +310,7 @@ public class ServiceData extends Service implements SensorEventListener {
         return sMsg;
     }
 
-    // Borrar tras prueba
-    /*public ByteBuffer SensorDataArray2Buffer_Test(@NonNull SensorData[] values) {
+    public ByteBuffer SensorDataArray2Buffer_Offline(@NonNull SensorData[] values) {
         String sLine = null;
         String sClass = null;
         String []sDataStrings;
@@ -301,8 +321,6 @@ public class ServiceData extends Service implements SensorEventListener {
             sLine = fInputData.readLine();
             sClass = fInputClass.readLine();
         } catch (IOException e) {
-            sLine = null;
-            sClass = null;
         }
 
         if (sLine != null) {
@@ -322,7 +340,7 @@ public class ServiceData extends Service implements SensorEventListener {
             iClassReal = -1;
 
         return buffer;
-    }*/
+    }
 
 
     public ByteBuffer SensorDataArray2Buffer(@NonNull SensorData[] values){
@@ -376,14 +394,14 @@ public class ServiceData extends Service implements SensorEventListener {
 
     private int getCNNOutput(ByteBuffer byteBuffer) {
         int iFinalClass = 0;
-        ModeloKerasSequencialBin model;
-        TensorBuffer inputFeature0;
+        //ModeloKerasSequencialBin model;
+        //TensorBuffer inputFeature0;
 
         try {
-            model = ModeloKerasSequencialBin.newInstance(this);
+            //model = ModeloKerasSequencialBin.newInstance(this);
 
             // Creates inputs for reference.
-            inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);
+            //inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 97, 3}, DataType.FLOAT32);
 
             inputFeature0.loadBuffer(byteBuffer);
 
@@ -395,7 +413,7 @@ public class ServiceData extends Service implements SensorEventListener {
             iFinalClass = getFinalClass(data);
 
             // Releases model resources if no longer used.
-            model.close();
+            //model.close();
         } catch (Exception e) {
             Log.e(e.getLocalizedMessage(), e.getMessage());
         }
@@ -481,10 +499,13 @@ public class ServiceData extends Service implements SensorEventListener {
 
                 iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
 
-                String sCadenaFichero =  "" + timeStamp + " " + data.getX() + " " + data.getY() + " " + data.getZ() + "\n";
-                try {
-                    fOutDataLog.write(sCadenaFichero.getBytes());
-                } catch (Exception e) {}
+                if (bLog) {
+                    String sCadenaFichero = "" + timeStamp + " " + data.getX() + " " + data.getY() + " " + data.getZ() + "\n";
+                    try {
+                        fOutDataLog.write(sCadenaFichero.getBytes());
+                    } catch (Exception e) {
+                    }
+                }
 
                 // comprobarValoresMinMax(values);
                 break;
@@ -544,13 +565,17 @@ public class ServiceData extends Service implements SensorEventListener {
         controlSensors(SENSORS_OFF);
 
         try {
-            fOutDataLog.close();
+            if (bLog)
+                fOutDataLog.close();
 
-            // Borrar cuando probado
-            /*fInputClass.close();
-            fInputData.close();*/
+            if (bOffline) {
+                fInputClass.close();
+                fInputData.close();
+            }
             //fOutBufferCNN.close();
         } catch (Exception e) {}
+
+        model.close();
 
         timerUpdateData.cancel();
         timerClassify.cancel();

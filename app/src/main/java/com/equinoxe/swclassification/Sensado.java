@@ -61,6 +61,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     int iDetectCount = 0;
 
+    boolean bOffline, bLog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,6 +78,10 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         textViewMsg = findViewById(R.id.textViewMsg);
         textViewMinValues = findViewById(R.id.textViewMinValues);
         textViewMaxValues = findViewById(R.id.textViewMaxValues);
+
+        Bundle extras = getIntent().getExtras();
+        bOffline = extras.getBoolean("Offline");
+        bLog = extras.getBoolean("Log");
 
         registerReceiver(receiver, new IntentFilter(NOTIFICATION));
 
@@ -190,7 +196,11 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                         sMsgBarometer = sCadena;
                         break;
                     case MSG:
-                        sMsg = sCadena + " - " + iDetectCount;
+                        if (bOffline)
+                            sMsg = sCadena;
+                        else
+                            sMsg = sCadena + " - " + iDetectCount;
+
                         if (sCadena.compareTo(CLASS_BRUSH) == 0) {
                             iDetectCount++;
                             vibrate();
@@ -221,7 +231,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     private void crearServicio() {
         intentServicioDatos = new Intent(this, ServiceData.class);
-
+        intentServicioDatos.putExtra("Offline", bOffline);
+        intentServicioDatos.putExtra("Log", bLog);
         startService(intentServicioDatos);
     }
 }
