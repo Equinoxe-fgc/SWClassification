@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
 
     private ActivityMainBinding binding;
 
-    private CheckBox checkBoxOffline, checkBoxLog;
+    private CheckBox checkBoxOffline, checkBoxLog, checkBoxDetectionLog;
 
     /*private SensorManager sensorManager;
     Sensor sensorAccelerometer = null;*/
@@ -34,6 +34,7 @@ public class MainActivity extends Activity {
 
         checkBoxOffline = findViewById(R.id.checkBoxOffline);
         checkBoxLog = findViewById(R.id.checkBoxLog);
+        checkBoxDetectionLog = findViewById(R.id.checkBoxDetectionLog);
 
         checkForPermissions();
 
@@ -55,6 +56,7 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(this, Sensado.class);
         intent.putExtra("Offline", checkBoxOffline.isChecked());
         intent.putExtra("Log", checkBoxLog.isChecked());
+        intent.putExtra("DetectionLog", checkBoxDetectionLog.isChecked());
         startActivity(intent);
     }
 

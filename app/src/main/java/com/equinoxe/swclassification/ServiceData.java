@@ -64,8 +64,7 @@ public class ServiceData extends Service implements SensorEventListener {
     private SensorManager sensorManager;
 
     private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer;
-    private String sMsg;
-    private String sMsgMinValues, sMsgMaxValues;
+    private String sMsg, startDateandTime;
 
     PowerManager powerManager;
     PowerManager.WakeLock wakeLock;
@@ -102,7 +101,7 @@ public class ServiceData extends Service implements SensorEventListener {
     BufferedReader fInputData, fInputClass;
     int iClassReal;
 
-    boolean bOffline, bLog;
+    boolean bOffline, bLog, bDetectionLog;
 
 
     @Override
@@ -164,6 +163,8 @@ public class ServiceData extends Service implements SensorEventListener {
 
         bOffline = intent.getBooleanExtra("Offline", false);
         bLog = intent.getBooleanExtra("Log", false);
+        bDetectionLog = intent.getBooleanExtra("DetectionLog", false);
+        startDateandTime = intent.getStringExtra("DateTime");
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmm", Locale.UK);
         String currentDateandTime = sdf.format(new Date());
@@ -223,8 +224,9 @@ public class ServiceData extends Service implements SensorEventListener {
                         else if (iClass == 1 && iClassReal == 0)
                             iFalsoPositivo++;
                     }
-                } else
+                } else {
                     iClass = getCNNOutput(byteBuffer);
+                }
 
                 Message msgMsg = mServiceHandler.obtainMessage();
                 msgMsg.arg1 = Sensado.MSG;

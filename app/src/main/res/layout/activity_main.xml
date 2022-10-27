@@ -42,6 +42,14 @@
             android:text="@string/LOG"
             android:translationX="40dp" />
 
+        <CheckBox
+            android:id="@+id/checkBoxDetectionLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/DETECTION_LOG"
+            android:translationX="40dp"
+            android:visibility="gone" />
+
     </LinearLayout>
 
 </androidx.wear.widget.BoxInsetLayout>
