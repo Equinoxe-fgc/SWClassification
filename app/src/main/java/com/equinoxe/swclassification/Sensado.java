@@ -7,10 +7,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Message;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.fragment.app.FragmentActivity;
@@ -18,15 +22,20 @@ import androidx.wear.ambient.AmbientModeSupport;
 
 import com.equinoxe.swclassification.databinding.ActivitySensadoBinding;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 public class Sensado extends FragmentActivity implements AmbientModeSupport.AmbientCallbackProvider {
     private static final String AMBIENT_UPDATE_ACTION = "com.equinoxe.swclassification.action.AMBIENT_UPDATE";
     public static final String NOTIFICATION = "com.equinoxe.swclassification.NOTIFICACION";
     public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
+    public static final long DELAY_BRUSH = TimeUnit.SECONDS.toMillis(3);
 
     public static final String CLASS_OTHER = "other";
     public static final String CLASS_BRUSH = "brush_teeth";
@@ -38,12 +47,11 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     final static int BAROMETER    = 4;
     final static int ERROR        = 100;
     final static int MSG          = 200;
-    final static int MIN_VALUE    = 300;
-    final static int MAX_VALUE    = 400;
 
     private TextView textViewAcceleration, textViewGyroscope, textViewBarometer, textViewMsg;
-    private TextView textViewMinValues, textViewMaxValues;
+    private TextView textViewMsg2;
     private TextView textViewBattery, textViewHora;
+    private Button buttonBrush;
 
     private ActivitySensadoBinding binding;
 
@@ -52,16 +60,24 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     private PendingIntent ambientUpdatePendingIntent;
     private BroadcastReceiver ambientUpdateBroadcastReceiver;
 
+    Timer timerBrush;
+    TimerTask timerTaskBrush;
+
     Intent intentServicioDatos;
 
-    private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg;
-    private String sMsgMinValues, sMsgMaxValues;
+    private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg, sMsg2, startDateandTime;
 
     SimpleDateFormat sdf;
 
     int iDetectCount = 0;
 
     boolean bOffline, bLog;
+
+    boolean bBrush = false;
+    int iNegativos = 0;
+    int iPositivos = 0;
+    int iFalsoPositivo = 0;
+    int iFalsoNegativo = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,8 +92,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         textViewGyroscope = findViewById(R.id.textViewGyroscope);
         textViewBarometer = findViewById(R.id.textViewBarometer);
         textViewMsg = findViewById(R.id.textViewMsg);
-        textViewMinValues = findViewById(R.id.textViewMinValues);
-        textViewMaxValues = findViewById(R.id.textViewMaxValues);
+        textViewMsg2 = findViewById(R.id.textViewMsg2);
+        buttonBrush = findViewById(R.id.buttonBrush);
 
         Bundle extras = getIntent().getExtras();
         bOffline = extras.getBoolean("Offline");
@@ -99,8 +115,17 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
         sdf = new SimpleDateFormat("HH:mm", Locale.UK);
 
+        timerTaskBrush = new TimerTask() {
+            public void run() {
+                bBrush = true;
+            }
+        };
+        timerBrush = new Timer();
+
         ambientUpdateAlarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, AMBIENT_INTERVAL_MS, AMBIENT_INTERVAL_MS, ambientUpdatePendingIntent);
         crearServicio();
+
+        startDateandTime = sdf.format(new Date());
     }
 
     @Override
@@ -135,8 +160,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         textViewBarometer.setText(sMsgBarometer);*/
         textViewMsg.setText(sMsg);
 
-        textViewMaxValues.setText(sMsgMaxValues);
-        textViewMinValues.setText(sMsgMinValues);
+        sMsg2 = "P: " + iPositivos + " N: " + iNegativos + " FP: " + iFalsoPositivo + " FN: " + iFalsoNegativo;
+        textViewMsg2.setText(sMsg2);
 
         /*long timeMs = System.currentTimeMillis();
         // Schedule a new alarm
@@ -166,6 +191,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     @Override
     public void onDestroy() {
         //ambientUpdateAlarmManager.cancel(ambientUpdatePendingIntent);
+        grabarEstadisticas();
         super.onDestroy();
 
         unregisterReceiver(receiver);
@@ -174,6 +200,30 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     public void onClickStop(View v) {
         stopService(intentServicioDatos);
         finish();
+    }
+
+    public void onClickBrush(View v) {
+        if (bBrush) {
+            bBrush = false;
+            buttonBrush.setText(getString(R.string.START_BRUSH));
+        } else {
+            timerBrush.schedule(timerTaskBrush, DELAY_BRUSH);
+            buttonBrush.setText(getString(R.string.STOP_BRUSH));
+        }
+    }
+
+    private void grabarEstadisticas() {
+        String currentDateandTime = sdf.format(new Date());
+        if (bLog) {
+            try {
+                FileOutputStream fOutStatsLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + "_Stats.txt", true);
+                String sCadena = startDateandTime + ";" + currentDateandTime + "," + iPositivos + "," + iNegativos + "," + iFalsoPositivo + "," + iFalsoNegativo;;
+                fOutStatsLog.write(sCadena.getBytes());
+                fOutStatsLog.close();
+            } catch (IOException e) {
+            }
+        }
+
     }
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -203,7 +253,16 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
                         if (sCadena.compareTo(CLASS_BRUSH) == 0) {
                             iDetectCount++;
-                            vibrate();
+                            if (bBrush) {
+                                iPositivos++;
+                            }
+                            else
+                                iFalsoPositivo++;
+                        } else {
+                            if (bBrush)
+                                iFalsoNegativo++;
+                            else
+                                iNegativos++;
                         }
                         break;
                         /*case MAGNETOMETRO:
@@ -212,12 +271,6 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                         case HEART_RATE:
                             sMsgHR = sCadena;
                             break;*/
-                    case MAX_VALUE:
-                        sMsgMaxValues = sCadena;
-                        break;
-                    case MIN_VALUE:
-                        sMsgMinValues = sCadena;
-                        break;
                     }
                 }
         }

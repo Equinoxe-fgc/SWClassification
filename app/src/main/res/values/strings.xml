@@ -13,4 +13,6 @@
     <string name="ACCELOROMETER">Accelerometer info</string>
     <string name="OFFLINE">Offline mode</string>
     <string name="LOG">Data sensor log</string>
+    <string name="START_BRUSH">Start brush</string>
+    <string name="STOP_BRUSH">Stop brush</string>
 </resources>

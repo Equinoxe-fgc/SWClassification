@@ -140,12 +140,6 @@ public class ServiceData extends Service implements SensorEventListener {
                 case Sensado.MSG:
                     publishSensorValues(Sensado.MSG, sMsg);
                     break;
-                case Sensado.MIN_VALUE:
-                    publishSensorValues(Sensado.MIN_VALUE, sMsgMinValues);
-                    break;
-                case Sensado.MAX_VALUE:
-                    publishSensorValues(Sensado.MAX_VALUE, sMsgMaxValues);
-                    break;
                 /*case Sensado.MAGNETOMETRO:
                     publishSensorValues(Sensado.MAGNETOMETRO, msg.arg2, sCadenaMagnetometro);
                     break;
