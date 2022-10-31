@@ -65,17 +65,21 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg, sMsg2, startDateandTime;
 
-    SimpleDateFormat sdfHora, sdfFechaHora;
+    SimpleDateFormat sdfHora;
+    static SimpleDateFormat sdfFechaHora;
 
     int iDetectCount = 0;
 
-    boolean bOffline, bLog, bDetectionLog;
+    boolean bOffline, bDetectionLog;
+    static boolean bLog;
 
     static boolean bBrush = false;
     int iNegativos = 0;
     int iPositivos = 0;
     int iFalsoPositivo = 0;
     int iFalsoNegativo = 0;
+
+    static FileOutputStream fLogBrush;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,12 +117,23 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         };
 
         sdfHora = new SimpleDateFormat("HH:mm", Locale.UK);
-        sdfFechaHora = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
+        sdfFechaHora = new SimpleDateFormat("yyyyMMdd_HHmmssSSS", Locale.UK);
 
         ambientUpdateAlarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, AMBIENT_INTERVAL_MS, AMBIENT_INTERVAL_MS, ambientUpdatePendingIntent);
-        crearServicio();
 
         startDateandTime = sdfFechaHora.format(new Date());
+
+        if (bLog) {
+            try {
+                String currentDateandTime = sdfFechaHora.format(new Date());
+
+                fLogBrush = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_BrushLog.txt", false);
+            } catch (IOException e) {
+            }
+
+        }
+
+        crearServicio();
     }
 
     protected static TimerTask newTask() {
@@ -126,7 +141,15 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
             @Override
             public void run() {
+                if (bLog) {
+                    try {
+                        String currentDateandTime = sdfFechaHora.format(new Date()) + " 1\n";
+                        fLogBrush.write(currentDateandTime.getBytes());
+                    } catch (IOException e) {
+                    }
+
                 bBrush = true;
+                }
             }
         };
     }
@@ -196,6 +219,13 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     public void onDestroy() {
         //ambientUpdateAlarmManager.cancel(ambientUpdatePendingIntent);
         grabarEstadisticas();
+
+        if (bLog) {
+            try {
+                fLogBrush.close();
+            } catch (IOException e) {
+            }
+        }
         super.onDestroy();
 
         unregisterReceiver(receiver);
@@ -208,6 +238,14 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     public void onClickBrush(View v) {
         if (bBrush) {
+            if (bLog) {
+                try {
+                    String currentDateandTime = sdfFechaHora.format(new Date()) + " 0\n";
+                    fLogBrush.write(currentDateandTime.getBytes());
+                } catch (IOException e) {
+                }
+            }
+
             bBrush = false;
             timerBrush.cancel();
 
@@ -224,7 +262,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     private void grabarEstadisticas() {
         String currentDateandTime = sdfFechaHora.format(new Date());
         try {
-            FileOutputStream fOutStatsLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + "_Stats.txt", true);
+            FileOutputStream fOutStatsLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_Stats.txt", true);
             String sCadena = startDateandTime + "," + currentDateandTime + "," + iPositivos + "," + iNegativos + "," + iFalsoPositivo + "," + iFalsoNegativo + "\n";
             fOutStatsLog.write(sCadena.getBytes());
             fOutStatsLog.close();

@@ -72,6 +72,7 @@ public class ServiceData extends Service implements SensorEventListener {
     Timer timerUpdateData;
 
     DecimalFormat df;
+    SimpleDateFormat sdfFechaHora;
 
     int iTamBuffer;
     SensorData []dataAccelerometer;
@@ -116,6 +117,7 @@ public class ServiceData extends Service implements SensorEventListener {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         df = new DecimalFormat("##.###");
+        sdfFechaHora = new SimpleDateFormat("yyyyMMdd_HHmmssSSS", Locale.UK);
     }
 
     // Handler that receives messages from the thread
@@ -166,7 +168,7 @@ public class ServiceData extends Service implements SensorEventListener {
         bDetectionLog = intent.getBooleanExtra("DetectionLog", false);
         startDateandTime = intent.getStringExtra("DateTime");
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmm", Locale.UK);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
         String currentDateandTime = sdf.format(new Date());
         if (bLog) {
             try {
@@ -496,7 +498,9 @@ public class ServiceData extends Service implements SensorEventListener {
                 iPosDataAccelerometer = (iPosDataAccelerometer + 1) % iTamBuffer;
 
                 if (bLog) {
-                    String sCadenaFichero = "" + timeStamp + " " + data.getX() + " " + data.getY() + " " + data.getZ() + "\n";
+                    String sFechaHora = sdfFechaHora.format(new Date());
+
+                    String sCadenaFichero = sFechaHora + " " + timeStamp + " " + data.getX() + " " + data.getY() + " " + data.getZ() + "\n";
                     try {
                         fOutDataLog.write(sCadenaFichero.getBytes());
                     } catch (Exception e) {
