@@ -6,21 +6,25 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 import androidx.wear.ambient.AmbientModeSupport;
 
 import com.equinoxe.swclassification.databinding.ActivitySensadoBinding;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -80,6 +84,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     int iFalsoNegativo = 0;
 
     static FileOutputStream fLogBrush;
+    Uri uriFile;
+    ParcelFileDescriptor pfd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,16 +130,30 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         startDateandTime = sdfFechaHora.format(new Date());
 
         if (bLog) {
-            try {
-                String currentDateandTime = sdfFechaHora.format(new Date());
-
-                fLogBrush = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_BrushLog.txt", false);
-            } catch (IOException e) {
-            }
-
+            createBrushLogFile();
         }
 
         crearServicio();
+    }
+
+    public void createBrushLogFile() {
+        String currentDateandTime = sdfFechaHora.format(new Date());
+        String sFileName = Build.MODEL + "_" + currentDateandTime + "_BrushLog.txt";
+        File filePath;
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            filePath = getFilesDir();
+        else
+            filePath = Environment.getExternalStorageDirectory();
+
+        File fileBrushLog;
+        try {
+            fileBrushLog = new File(filePath, sFileName);
+            fLogBrush = new FileOutputStream(fileBrushLog, false);
+        } catch (IOException e) {
+            Toast toast = Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT);
+            toast.show();
+        }
     }
 
     protected static TimerTask newTask() {
@@ -223,7 +243,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         if (bLog) {
             try {
                 fLogBrush.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
             }
         }
         super.onDestroy();

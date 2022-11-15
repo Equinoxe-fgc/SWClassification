@@ -1,5 +1,7 @@
 package com.equinoxe.swclassification;
 
+import static android.os.Environment.getExternalStoragePublicDirectory;
+
 import android.app.Service;
 import android.content.Intent;
 import android.content.Context;
@@ -26,6 +28,7 @@ import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -168,13 +171,8 @@ public class ServiceData extends Service implements SensorEventListener {
         bDetectionLog = intent.getBooleanExtra("DetectionLog", false);
         startDateandTime = intent.getStringExtra("DateTime");
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
-        String currentDateandTime = sdf.format(new Date());
         if (bLog) {
-            try {
-                fOutDataLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_" + currentDateandTime + "_DataLog.txt", true);
-            } catch (IOException e) {
-            }
+            createLogFile();
         }
 
         /*    try {
@@ -292,6 +290,26 @@ public class ServiceData extends Service implements SensorEventListener {
 
         return START_NOT_STICKY;
     }
+
+    void createLogFile() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
+        String currentDateandTime = sdf.format(new Date());
+
+        File filePath, fileDataLog;
+        String sFileName = "/" + Build.MODEL + "_" + currentDateandTime + "_DataLog.txt";
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            filePath = getFilesDir();
+        else
+            filePath = Environment.getExternalStorageDirectory();
+
+        try {
+            fileDataLog = new File(filePath, sFileName);
+            fOutDataLog = new FileOutputStream(fileDataLog, true);
+        } catch (IOException e) {
+        }
+    }
+
 
     String createMessageClass(int iClass) {
         String sMsg = "";
