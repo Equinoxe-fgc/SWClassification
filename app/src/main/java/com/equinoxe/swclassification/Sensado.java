@@ -150,13 +150,17 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         try {
             fileBrushLog = new File(filePath, sFileName);
             fLogBrush = new FileOutputStream(fileBrushLog, false);
+
+            // Se empieza grabando que no se está lavando los dientes
+            String sCadena = currentDateandTime + " 0\n";
+            fLogBrush.write(sCadena.getBytes());
         } catch (IOException e) {
             Toast toast = Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT);
             toast.show();
         }
     }
 
-    protected static TimerTask newTask() {
+    protected static TimerTask initBrushTask() {
         return new TimerTask() {
 
             @Override
@@ -272,7 +276,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
             buttonBrush.setText(getString(R.string.START_BRUSH));
         } else {
                 timerBrush = new Timer();
-                timerTaskBrush = newTask();
+                timerTaskBrush = initBrushTask();
                 timerBrush.schedule(timerTaskBrush, DELAY_BRUSH);
 
                 buttonBrush.setText(getString(R.string.STOP_BRUSH));

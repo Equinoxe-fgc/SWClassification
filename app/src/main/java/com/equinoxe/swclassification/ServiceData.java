@@ -226,6 +226,15 @@ public class ServiceData extends Service implements SensorEventListener {
                     }
                 } else {
                     iClass = getCNNOutput(byteBuffer);
+                    if (bLog) {
+                        String sFechaHora = sdfFechaHora.format(new Date());
+
+                        String sCadenaFichero = sFechaHora + " " + iClass + "\n";
+                        try {
+                            fOutDataLog.write(sCadenaFichero.getBytes());
+                        } catch (Exception e) {
+                        }
+                    }
                 }
 
                 Message msgMsg = mServiceHandler.obtainMessage();
