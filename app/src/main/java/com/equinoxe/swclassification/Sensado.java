@@ -70,7 +70,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg, sMsg2, startDateandTime;
 
     SimpleDateFormat sdfHora;
-    static SimpleDateFormat sdfFechaHora;
+    static SimpleDateFormat sdfFechaHora, sdFechaHoraNombreFichero;
 
     int iDetectCount = 0;
 
@@ -123,7 +123,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         };
 
         sdfHora = new SimpleDateFormat("HH:mm", Locale.UK);
-        sdfFechaHora = new SimpleDateFormat("yyyyMMdd_HHmmssSSS", Locale.UK);
+        sdfFechaHora = new SimpleDateFormat("yyyyMMdd_HH:mm:ss:SSS", Locale.UK);
+        sdFechaHoraNombreFichero = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
 
         ambientUpdateAlarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, AMBIENT_INTERVAL_MS, AMBIENT_INTERVAL_MS, ambientUpdatePendingIntent);
 
@@ -137,8 +138,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     }
 
     public void createBrushLogFile() {
-        String currentDateandTime = sdfFechaHora.format(new Date());
-        String sFileName = Build.MODEL + "_" + currentDateandTime + "_BrushLog.txt";
+        String currentDateandTimeFile = sdFechaHoraNombreFichero.format(new Date());
+        String sFileName = Build.MODEL + "_" + currentDateandTimeFile + "_BrushLog.txt";
         File filePath;
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
@@ -152,7 +153,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
             fLogBrush = new FileOutputStream(fileBrushLog, false);
 
             // Se empieza grabando que no se está lavando los dientes
-            String sCadena = currentDateandTime + " 0\n";
+            String sCadena = sdfFechaHora.format(new Date()) + " 0\n";
             fLogBrush.write(sCadena.getBytes());
         } catch (IOException e) {
             Toast toast = Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT);
@@ -246,6 +247,10 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
         if (bLog) {
             try {
+                // Se graba la hora de finalización
+                String sCadena = sdfFechaHora.format(new Date()) + " 0\n";
+                fLogBrush.write(sCadena.getBytes());
+
                 fLogBrush.close();
             } catch (Exception e) {
             }
@@ -287,7 +292,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         String currentDateandTime = sdfFechaHora.format(new Date());
         try {
             FileOutputStream fOutStatsLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_Stats.txt", true);
-            String sCadena = startDateandTime + "," + currentDateandTime + "," + iPositivos + "," + iNegativos + "," + iFalsoPositivo + "," + iFalsoNegativo + "\n";
+            String sCadena = startDateandTime + " " + currentDateandTime + " " + iPositivos + "," + iNegativos + "," + iFalsoPositivo + "," + iFalsoNegativo + "\n";
             fOutStatsLog.write(sCadena.getBytes());
             fOutStatsLog.close();
         } catch (IOException e) {

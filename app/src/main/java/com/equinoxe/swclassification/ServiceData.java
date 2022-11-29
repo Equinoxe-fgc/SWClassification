@@ -75,7 +75,7 @@ public class ServiceData extends Service implements SensorEventListener {
     Timer timerUpdateData;
 
     DecimalFormat df;
-    SimpleDateFormat sdfFechaHora;
+    SimpleDateFormat sdfFechaHora, sdFechaHoraNombreFichero;
 
     int iTamBuffer;
     SensorData []dataAccelerometer;
@@ -120,7 +120,8 @@ public class ServiceData extends Service implements SensorEventListener {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         df = new DecimalFormat("##.###");
-        sdfFechaHora = new SimpleDateFormat("yyyyMMdd_HHmmssSSS", Locale.UK);
+        sdfFechaHora = new SimpleDateFormat("yyyyMMdd_HH:mm:ss:SSS", Locale.UK);
+        sdFechaHoraNombreFichero = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
     }
 
     // Handler that receives messages from the thread
@@ -229,7 +230,7 @@ public class ServiceData extends Service implements SensorEventListener {
                     if (bLog) {
                         String sFechaHora = sdfFechaHora.format(new Date());
 
-                        String sCadenaFichero = sFechaHora + " " + iClass + "\n";
+                        String sCadenaFichero = sFechaHora + " " + iClass + " 0.0 0.0 0.0\n";
                         try {
                             fOutDataLog.write(sCadenaFichero.getBytes());
                         } catch (Exception e) {
@@ -301,8 +302,7 @@ public class ServiceData extends Service implements SensorEventListener {
     }
 
     void createLogFile() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
-        String currentDateandTime = sdf.format(new Date());
+        String currentDateandTime = sdFechaHoraNombreFichero.format(new Date());
 
         File filePath, fileDataLog;
         String sFileName = "/" + Build.MODEL + "_" + currentDateandTime + "_DataLog.txt";
