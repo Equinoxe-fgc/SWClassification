@@ -18,18 +18,18 @@
             android:layout_height="wrap_content"
             android:textAlignment="center" />
 
-        <TextView
-            android:id="@+id/textViewHora"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textAlignment="center" />
-
         <Button
             android:id="@+id/buttonStop"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:onClick="onClickStop"
             android:text="@string/STOP" />
+
+        <TextView
+            android:id="@+id/textViewHora"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center" />
 
         <TextView
             android:id="@+id/textViewAcceleration"

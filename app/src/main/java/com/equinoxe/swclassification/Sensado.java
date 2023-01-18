@@ -14,6 +14,7 @@ import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -132,6 +133,13 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
         if (bLog) {
             createBrushLogFile();
+
+            textViewBattery.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24.0F);
+            textViewHora.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 48.0F);
+
+            textViewAcceleration.setVisibility(View.GONE);
+            textViewMsg.setVisibility(View.GONE);
+            textViewMsg2.setVisibility(View.GONE);
         }
 
         crearServicio();
