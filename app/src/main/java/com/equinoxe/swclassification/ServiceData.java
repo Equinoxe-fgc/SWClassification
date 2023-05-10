@@ -67,7 +67,7 @@ public class ServiceData extends Service implements SensorEventListener {
     private SensorManager sensorManager;
 
     private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer;
-    private String sMsg, startDateandTime;
+    private String sMsg, startDateandTime, dateAndTimeFile;
 
     PowerManager powerManager;
     PowerManager.WakeLock wakeLock;
@@ -75,7 +75,8 @@ public class ServiceData extends Service implements SensorEventListener {
     Timer timerUpdateData;
 
     DecimalFormat df;
-    SimpleDateFormat sdfFechaHora, sdFechaHoraNombreFichero;
+    SimpleDateFormat sdfFechaHora;
+    //SimpleDateFormat sdFechaHoraNombreFichero;
 
     int iTamBuffer;
     SensorData []dataAccelerometer;
@@ -121,7 +122,7 @@ public class ServiceData extends Service implements SensorEventListener {
 
         df = new DecimalFormat("##.###");
         sdfFechaHora = new SimpleDateFormat("yyyyMMdd_HH:mm:ss:SSS", Locale.UK);
-        sdFechaHoraNombreFichero = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
+        //sdFechaHoraNombreFichero = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK);
     }
 
     // Handler that receives messages from the thread
@@ -171,6 +172,7 @@ public class ServiceData extends Service implements SensorEventListener {
         bLog = intent.getBooleanExtra("Log", false);
         bDetectionLog = intent.getBooleanExtra("DetectionLog", false);
         startDateandTime = intent.getStringExtra("DateTime");
+        dateAndTimeFile = intent.getStringExtra("DateTimeFile");
 
         if (bLog) {
             createLogFile();
@@ -302,10 +304,10 @@ public class ServiceData extends Service implements SensorEventListener {
     }
 
     void createLogFile() {
-        String currentDateandTime = sdFechaHoraNombreFichero.format(new Date());
+        //String currentDateandTime = sdFechaHoraNombreFichero.format(new Date());
 
         File filePath, fileDataLog;
-        String sFileName = "/" + Build.MODEL + "_" + currentDateandTime + "_DataLog.txt";
+        String sFileName = "/" + Build.MODEL + "_" + dateAndTimeFile + "_DataLog.txt";
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
             filePath = getFilesDir();

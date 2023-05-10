@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
 
     private ActivityMainBinding binding;
 
-    private CheckBox checkBoxOffline, checkBoxLog, checkBoxDetectionLog;
+    private CheckBox checkBoxOffline, checkBoxLog, checkBoxDetectionLog, checkBoxVibrate;
 
     /*private SensorManager sensorManager;
     Sensor sensorAccelerometer = null;*/
@@ -35,6 +35,7 @@ public class MainActivity extends Activity {
         checkBoxOffline = findViewById(R.id.checkBoxOffline);
         checkBoxLog = findViewById(R.id.checkBoxLog);
         checkBoxDetectionLog = findViewById(R.id.checkBoxDetectionLog);
+        checkBoxVibrate = findViewById(R.id.checkBoxVibrate);
 
         checkForPermissions();
 
@@ -57,6 +58,7 @@ public class MainActivity extends Activity {
         intent.putExtra("Offline", checkBoxOffline.isChecked());
         intent.putExtra("Log", checkBoxLog.isChecked());
         intent.putExtra("DetectionLog", checkBoxDetectionLog.isChecked());
+        intent.putExtra("Vibrate", checkBoxVibrate.isChecked());
         startActivity(intent);
     }
 

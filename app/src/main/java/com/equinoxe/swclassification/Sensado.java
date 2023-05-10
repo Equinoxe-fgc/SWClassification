@@ -68,14 +68,14 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     Intent intentServicioDatos;
 
-    private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg, sMsg2, startDateandTime;
+    private String sMsgAccelerometer, sMsgGyroscope, sMsgBarometer, sMsg, sMsg2, startDateandTime, dateAndTimeFile;
 
     SimpleDateFormat sdfHora;
     static SimpleDateFormat sdfFechaHora, sdFechaHoraNombreFichero;
 
     int iDetectCount = 0;
 
-    boolean bOffline, bDetectionLog;
+    boolean bOffline, bDetectionLog, bVibrate;
     static boolean bLog;
 
     static boolean bBrush = false;
@@ -108,6 +108,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         bOffline = extras.getBoolean("Offline");
         bLog = extras.getBoolean("Log");
         bDetectionLog = extras.getBoolean("DetectionLog");
+        bVibrate = extras.getBoolean("Vibrate");
 
         registerReceiver(receiver, new IntentFilter(NOTIFICATION));
 
@@ -130,6 +131,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         ambientUpdateAlarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, AMBIENT_INTERVAL_MS, AMBIENT_INTERVAL_MS, ambientUpdatePendingIntent);
 
         startDateandTime = sdfFechaHora.format(new Date());
+        dateAndTimeFile = sdFechaHoraNombreFichero.format(new Date());
 
         if (bLog) {
             createBrushLogFile();
@@ -146,8 +148,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     }
 
     public void createBrushLogFile() {
-        String currentDateandTimeFile = sdFechaHoraNombreFichero.format(new Date());
-        String sFileName = Build.MODEL + "_" + currentDateandTimeFile + "_BrushLog.txt";
+        //currentDateandTimeFile = sdFechaHoraNombreFichero.format(new Date());
+        String sFileName = Build.MODEL + "_" + dateAndTimeFile + "_BrushLog.txt";
         File filePath;
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
@@ -333,6 +335,9 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                             sMsg = sCadena + " - " + iDetectCount;
 
                         if (sCadena.compareTo(CLASS_BRUSH) == 0) {
+                            if (bVibrate)
+                                vibrate();
+
                             iDetectCount++;
                             if (bBrush) {
                                 iPositivos++;
@@ -369,6 +374,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         intentServicioDatos.putExtra("Log", bLog);
         intentServicioDatos.putExtra("DetectionLog", bDetectionLog);
         intentServicioDatos.putExtra("DateTime", startDateandTime);
+        intentServicioDatos.putExtra("DateTimeFile", dateAndTimeFile);
         startService(intentServicioDatos);
     }
 }

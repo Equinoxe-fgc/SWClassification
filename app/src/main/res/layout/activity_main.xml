@@ -38,8 +38,15 @@
             android:id="@+id/checkBoxLog"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="false"
+            android:checked="true"
             android:text="@string/LOG"
+            android:translationX="25dp" />
+
+        <CheckBox
+            android:id="@+id/checkBoxVibrate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/VIBRATE"
             android:translationX="25dp" />
 
         <CheckBox
