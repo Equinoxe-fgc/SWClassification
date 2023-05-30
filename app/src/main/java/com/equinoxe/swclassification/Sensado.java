@@ -40,6 +40,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     public static final String NOTIFICATION = "com.equinoxe.swclassification.NOTIFICACION";
     public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
     public static final long DELAY_BRUSH = TimeUnit.SECONDS.toMillis(3);
+    public static final int WINDOW_FILTER_DETECTION_SIZE = 5;
 
     public static final String CLASS_OTHER = "other";
     public static final String CLASS_BRUSH = "brush_teeth";
@@ -85,8 +86,9 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     int iFalsoNegativo = 0;
 
     static FileOutputStream fLogBrush;
-    Uri uriFile;
-    ParcelFileDescriptor pfd;
+
+    int []windowFilterDetection = new int[WINDOW_FILTER_DETECTION_SIZE];
+    int iPosWindowsFilterDetection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,6 +145,10 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
             textViewMsg.setVisibility(View.GONE);
             textViewMsg2.setVisibility(View.GONE);
         }
+
+        for (int i=0; i < WINDOW_FILTER_DETECTION_SIZE; i++)
+            windowFilterDetection[i] = 0;
+        iPosWindowsFilterDetection = 0;
 
         crearServicio();
     }
@@ -334,22 +340,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                         else
                             sMsg = sCadena + " - " + iDetectCount;
 
-                        if (sCadena.compareTo(CLASS_BRUSH) == 0) {
-                            if (bVibrate)
-                                vibrate();
-
-                            iDetectCount++;
-                            if (bBrush) {
-                                iPositivos++;
-                            }
-                            else
-                                iFalsoPositivo++;
-                        } else {
-                            if (bBrush)
-                                iFalsoNegativo++;
-                            else
-                                iNegativos++;
-                        }
+                        procesaDeteccion(sCadena);
                         break;
                         /*case MAGNETOMETRO:
                             sMsgMagnetometer = sCadena;
@@ -361,6 +352,44 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 }
         }
     };
+
+    private void procesaDeteccion(String sCadena) {
+        int iBrushDetectado;
+        boolean bBrushFinalDetectado;
+
+        if (sCadena.compareTo(CLASS_BRUSH) == 0)
+            iBrushDetectado = 1;
+        else if (sCadena.compareTo(CLASS_OTHER) == 0)
+            iBrushDetectado = 0;
+        else
+            return;
+
+        windowFilterDetection[iPosWindowsFilterDetection] = iBrushDetectado;
+        iPosWindowsFilterDetection = (iPosWindowsFilterDetection + 1) % WINDOW_FILTER_DETECTION_SIZE;
+
+        int iNumDetecciones = 0;
+        for (int i = 0; i < WINDOW_FILTER_DETECTION_SIZE; i++)
+            iNumDetecciones += windowFilterDetection[i];
+        bBrushFinalDetectado = iNumDetecciones > WINDOW_FILTER_DETECTION_SIZE/2;
+
+        if (bBrushFinalDetectado) {
+            if (bVibrate)
+                vibrate();
+
+            iDetectCount++;
+            if (bBrush) {
+                iPositivos++;
+            }
+            else
+                iFalsoPositivo++;
+        } else {
+            if (bBrush)
+                iFalsoNegativo++;
+            else
+                iNegativos++;
+        }
+    }
+
 
     private void vibrate() {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
