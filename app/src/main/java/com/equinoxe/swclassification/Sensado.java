@@ -39,7 +39,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     private static final String AMBIENT_UPDATE_ACTION = "com.equinoxe.swclassification.action.AMBIENT_UPDATE";
     public static final String NOTIFICATION = "com.equinoxe.swclassification.NOTIFICACION";
     public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
-    public static final long DELAY_BRUSH = TimeUnit.SECONDS.toMillis(3);
+    public static final long DELAY_BRUSH = TimeUnit.SECONDS.toMillis(1);
     public static final int WINDOW_FILTER_DETECTION_SIZE = 5;
 
     public static final String CLASS_OTHER = "other";
@@ -79,7 +79,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     boolean bOffline, bDetectionLog, bVibrate;
     static boolean bLog;
 
-    static boolean bBrush = false;
+    boolean bBrush = false;
     int iNegativos = 0;
     int iPositivos = 0;
     int iFalsoPositivo = 0;
@@ -189,7 +189,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                     } catch (IOException e) {
                     }
 
-                bBrush = true;
+                //bBrush = true;
                 }
             }
         };
@@ -301,6 +301,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 timerBrush.schedule(timerTaskBrush, DELAY_BRUSH);
 
                 buttonBrush.setText(getString(R.string.STOP_BRUSH));
+
+                bBrush = true;
         }
     }
 
