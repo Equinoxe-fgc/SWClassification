@@ -6,12 +6,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.ParcelFileDescriptor;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.TypedValue;
@@ -31,24 +29,23 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 public class Sensado extends FragmentActivity implements AmbientModeSupport.AmbientCallbackProvider {
     private static final String AMBIENT_UPDATE_ACTION = "com.equinoxe.swclassification.action.AMBIENT_UPDATE";
     public static final String NOTIFICATION = "com.equinoxe.swclassification.NOTIFICACION";
     public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
-    public static final long DELAY_BRUSH = TimeUnit.SECONDS.toMillis(1);
+    //public static final long DELAY_BRUSH = TimeUnit.SECONDS.toMillis(1);
     public static final int WINDOW_FILTER_DETECTION_SIZE = 5;
+    public static final int DESCARTES_TRAS_CAMBIO = 7;
 
     public static final String CLASS_OTHER = "other";
     public static final String CLASS_BRUSH = "brush_teeth";
 
     final static int ACELEROMETRO = 0;
     final static int GIROSCOPO    = 1;
-    final static int MAGNETOMETRO = 2;
-    final static int HEART_RATE   = 3;
+    //final static int MAGNETOMETRO = 2;
+    //final static int HEART_RATE   = 3;
     final static int BAROMETER    = 4;
     final static int MSG          = 200;
 
@@ -64,8 +61,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     private PendingIntent ambientUpdatePendingIntent;
     private BroadcastReceiver ambientUpdateBroadcastReceiver;
 
-    Timer timerBrush;
-    TimerTask timerTaskBrush;
+    /*Timer timerBrush;
+    TimerTask timerTaskBrush;*/
 
     Intent intentServicioDatos;
 
@@ -89,6 +86,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     int []windowFilterDetection = new int[WINDOW_FILTER_DETECTION_SIZE];
     int iPosWindowsFilterDetection;
+
+    int iDescartesTrasCambio;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,7 +142,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
             textViewAcceleration.setVisibility(View.GONE);
             textViewMsg.setVisibility(View.GONE);
-            textViewMsg2.setVisibility(View.GONE);
+            //textViewMsg2.setVisibility(View.GONE);
         }
 
         for (int i=0; i < WINDOW_FILTER_DETECTION_SIZE; i++)
@@ -177,7 +176,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         }
     }
 
-    protected static TimerTask initBrushTask() {
+    /*protected static TimerTask initBrushTask() {
         return new TimerTask() {
 
             @Override
@@ -193,7 +192,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 }
             }
         };
-    }
+    }*/
 
 
     @Override
@@ -292,17 +291,27 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
             }
 
             bBrush = false;
-            timerBrush.cancel();
+            iDescartesTrasCambio = 0;
+            //timerBrush.cancel();
 
             buttonBrush.setText(getString(R.string.START_BRUSH));
         } else {
-                timerBrush = new Timer();
+                /*timerBrush = new Timer();
                 timerTaskBrush = initBrushTask();
-                timerBrush.schedule(timerTaskBrush, DELAY_BRUSH);
+                timerBrush.schedule(timerTaskBrush, DELAY_BRUSH);*/
+
+                if (bLog) {
+                    try {
+                        String currentDateandTime = sdfFechaHora.format(new Date()) + " 1\n";
+                        fLogBrush.write(currentDateandTime.getBytes());
+                    } catch (IOException e) {
+                    }
+                }
 
                 buttonBrush.setText(getString(R.string.STOP_BRUSH));
 
                 bBrush = true;
+                iDescartesTrasCambio = 0;
         }
     }
 
@@ -366,29 +375,57 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         else
             return;
 
+        String sFechaHora = sdfFechaHora.format(new Date());
+        String sLog;
+        if (bLog) {
+            try {
+                sLog = sFechaHora + " - Movimiento: " + iBrushDetectado + "\n";
+                fLogBrush.write(sLog.getBytes());
+            } catch (IOException e) {
+            }
+        }
+
         windowFilterDetection[iPosWindowsFilterDetection] = iBrushDetectado;
         iPosWindowsFilterDetection = (iPosWindowsFilterDetection + 1) % WINDOW_FILTER_DETECTION_SIZE;
 
-        int iNumDetecciones = 0;
-        for (int i = 0; i < WINDOW_FILTER_DETECTION_SIZE; i++)
-            iNumDetecciones += windowFilterDetection[i];
-        bBrushFinalDetectado = iNumDetecciones > WINDOW_FILTER_DETECTION_SIZE/2;
+        iDescartesTrasCambio++;
+        if (iDescartesTrasCambio > DESCARTES_TRAS_CAMBIO) {
+            int iNumDetecciones = 0;
+            for (int i = 0; i < WINDOW_FILTER_DETECTION_SIZE; i++)
+                iNumDetecciones += windowFilterDetection[i];
+            bBrushFinalDetectado = iNumDetecciones > WINDOW_FILTER_DETECTION_SIZE / 2;
 
-        if (bBrushFinalDetectado) {
-            if (bVibrate)
-                vibrate();
-
-            iDetectCount++;
-            if (bBrush) {
-                iPositivos++;
+            if (bLog) {
+                try {
+                    sLog = sFechaHora + " - Detectado: " + bBrushFinalDetectado + "\n";
+                    fLogBrush.write(sLog.getBytes());
+                } catch (IOException e) {
+                }
             }
-            else
-                iFalsoPositivo++;
+
+            if (bBrushFinalDetectado) {
+                if (bVibrate)
+                    vibrate();
+
+                iDetectCount++;
+                if (bBrush) {
+                    iPositivos++;
+                } else
+                    iFalsoPositivo++;
+            } else {
+                if (bBrush)
+                    iFalsoNegativo++;
+                else
+                    iNegativos++;
+            }
         } else {
-            if (bBrush)
-                iFalsoNegativo++;
-            else
-                iNegativos++;
+            if (bLog) {
+                try {
+                    sLog = sFechaHora + " - Descartado: " + iBrushDetectado + "\n";
+                    fLogBrush.write(sLog.getBytes());
+                } catch (IOException e) {
+                }
+            }
         }
     }
 
