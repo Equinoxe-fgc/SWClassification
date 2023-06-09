@@ -37,7 +37,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
     //public static final long DELAY_BRUSH = TimeUnit.SECONDS.toMillis(1);
     public static final int WINDOW_FILTER_DETECTION_SIZE = 5;
-    public static final int DESCARTES_TRAS_CAMBIO = 7;
+    //public static final int DESCARTES_TRAS_CAMBIO = 7;
 
     public static final String CLASS_OTHER = "other";
     public static final String CLASS_BRUSH = "brush_teeth";
@@ -87,6 +87,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     int []windowFilterDetection = new int[WINDOW_FILTER_DETECTION_SIZE];
     int iPosWindowsFilterDetection;
 
+    int iContDescartesTrasCambio;
     int iDescartesTrasCambio;
 
     @Override
@@ -110,6 +111,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         bLog = extras.getBoolean("Log");
         bDetectionLog = extras.getBoolean("DetectionLog");
         bVibrate = extras.getBoolean("Vibrate");
+        iDescartesTrasCambio = extras.getInt("Descartes");
 
         registerReceiver(receiver, new IntentFilter(NOTIFICATION));
 
@@ -291,7 +293,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
             }
 
             bBrush = false;
-            iDescartesTrasCambio = 0;
+            iContDescartesTrasCambio = 0;
             //timerBrush.cancel();
 
             buttonBrush.setText(getString(R.string.START_BRUSH));
@@ -311,7 +313,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 buttonBrush.setText(getString(R.string.STOP_BRUSH));
 
                 bBrush = true;
-                iDescartesTrasCambio = 0;
+                iContDescartesTrasCambio = 0;
         }
     }
 
@@ -388,8 +390,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         windowFilterDetection[iPosWindowsFilterDetection] = iBrushDetectado;
         iPosWindowsFilterDetection = (iPosWindowsFilterDetection + 1) % WINDOW_FILTER_DETECTION_SIZE;
 
-        iDescartesTrasCambio++;
-        if (iDescartesTrasCambio > DESCARTES_TRAS_CAMBIO) {
+        iContDescartesTrasCambio++;
+        if (iContDescartesTrasCambio > iDescartesTrasCambio) {
             int iNumDetecciones = 0;
             for (int i = 0; i < WINDOW_FILTER_DETECTION_SIZE; i++)
                 iNumDetecciones += windowFilterDetection[i];

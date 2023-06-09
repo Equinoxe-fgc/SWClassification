@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.core.app.ActivityCompat;
@@ -21,6 +22,7 @@ public class MainActivity extends Activity {
     private ActivityMainBinding binding;
 
     private CheckBox checkBoxOffline, checkBoxLog, checkBoxDetectionLog, checkBoxVibrate;
+    private EditText editTextDescartes;
 
     /*private SensorManager sensorManager;
     Sensor sensorAccelerometer = null;*/
@@ -36,6 +38,7 @@ public class MainActivity extends Activity {
         checkBoxLog = findViewById(R.id.checkBoxLog);
         checkBoxDetectionLog = findViewById(R.id.checkBoxDetectionLog);
         checkBoxVibrate = findViewById(R.id.checkBoxVibrate);
+        editTextDescartes = findViewById(R.id.editTextDescartes);
 
         checkForPermissions();
 
@@ -59,6 +62,7 @@ public class MainActivity extends Activity {
         intent.putExtra("Log", checkBoxLog.isChecked());
         intent.putExtra("DetectionLog", checkBoxDetectionLog.isChecked());
         intent.putExtra("Vibrate", checkBoxVibrate.isChecked());
+        intent.putExtra("Descartes", Integer.parseInt(editTextDescartes.getText().toString()));
         startActivity(intent);
     }
 

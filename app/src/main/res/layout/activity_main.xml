@@ -49,6 +49,15 @@
             android:text="@string/VIBRATE"
             android:translationX="25dp" />
 
+        <EditText
+            android:id="@+id/editTextDescartes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="number"
+            android:text="@string/DESCARTES_TRAS_CAMBIO"
+            android:textAlignment="center" />
+
         <CheckBox
             android:id="@+id/checkBoxDetectionLog"
             android:layout_width="match_parent"

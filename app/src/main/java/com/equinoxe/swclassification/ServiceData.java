@@ -403,7 +403,8 @@ public class ServiceData extends Service implements SensorEventListener {
         for (int i = 0; i < SAMPLES_CNN; i++) {
             iPos = (int) ((float)i * fSamplingStep);
 
-            value = values[iPos];
+            //value = values[iPos];
+            value = dataAccelerometerAux[iPos];
 
             buffer.putFloat(value.getX());
             buffer.putFloat(value.getY());
