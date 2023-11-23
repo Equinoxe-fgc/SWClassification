@@ -139,8 +139,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         if (bLog) {
             createBrushLogFile();
 
-            textViewBattery.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24.0F);
-            textViewHora.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 48.0F);
+            textViewBattery.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20.0F);
+            textViewHora.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 40.0F);
 
             textViewAcceleration.setVisibility(View.GONE);
             textViewMsg.setVisibility(View.GONE);
@@ -377,7 +377,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         else
             return;
 
-        String sFechaHora = sdfFechaHora.format(new Date());
+        /*String sFechaHora = sdfFechaHora.format(new Date());
         String sLog;
         if (bLog) {
             try {
@@ -385,7 +385,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 fLogBrush.write(sLog.getBytes());
             } catch (IOException e) {
             }
-        }
+        }*/
 
         windowFilterDetection[iPosWindowsFilterDetection] = iBrushDetectado;
         iPosWindowsFilterDetection = (iPosWindowsFilterDetection + 1) % WINDOW_FILTER_DETECTION_SIZE;
@@ -397,13 +397,13 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 iNumDetecciones += windowFilterDetection[i];
             bBrushFinalDetectado = iNumDetecciones > WINDOW_FILTER_DETECTION_SIZE / 2;
 
-            if (bLog) {
+            /*if (bLog) {
                 try {
                     sLog = sFechaHora + " - Detectado: " + bBrushFinalDetectado + "\n";
                     fLogBrush.write(sLog.getBytes());
                 } catch (IOException e) {
                 }
-            }
+            }*/
 
             if (bBrushFinalDetectado) {
                 if (bVibrate)
@@ -420,7 +420,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 else
                     iNegativos++;
             }
-        } else {
+        } /*else {
             if (bLog) {
                 try {
                     sLog = sFechaHora + " - Descartado: " + iBrushDetectado + "\n";
@@ -428,7 +428,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
                 } catch (IOException e) {
                 }
             }
-        }
+        }*/
     }
 
 

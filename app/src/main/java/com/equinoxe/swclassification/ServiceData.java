@@ -54,8 +54,9 @@ public class ServiceData extends Service implements SensorEventListener {
 
     private static final float CNN_MAX_VALUE_IN = 2.0F;
 
-    private static final String FILE_DATA = "Dataset_032_PAAL.mat.dat";
-    private static final String FILE_CLASS = "Dataset_032_PAAL.mat.classbin";
+    // Ficheros para test en offline
+    private static final String FILE_DATA = "data.dat";
+    private static final String FILE_CLASS = "classes.classbin";
 
     /*private float []fMinValues = {10000.0F, 10000.0F, 10000.0F};
     private float []fMaxValues = {-10000.0F, -10000.0F, -10000.0F};*/
