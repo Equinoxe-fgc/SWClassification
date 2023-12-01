@@ -119,7 +119,7 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         ambientUpdateAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Intent ambientUpdateIntent = new Intent(AMBIENT_UPDATE_ACTION);
         ambientUpdatePendingIntent = PendingIntent.getBroadcast(
-                this, 0, ambientUpdateIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                this, 0, ambientUpdateIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         ambientUpdateBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -320,7 +320,17 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     private void grabarEstadisticas() {
         String currentDateandTime = sdfFechaHora.format(new Date());
         try {
-            FileOutputStream fOutStatsLog = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + Build.MODEL + "_Stats.txt", true);
+            File filePath;
+            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                filePath = getFilesDir();
+            else
+                filePath = Environment.getExternalStorageDirectory();
+
+            String sFileName = Build.MODEL + "_Stats.txt";
+
+            File fileStatsLog = new File(filePath, sFileName);
+            FileOutputStream fOutStatsLog = new FileOutputStream(fileStatsLog, true);
+
             String sCadena = startDateandTime + " " + currentDateandTime + " " + iPositivos + "," + iNegativos + "," + iFalsoPositivo + "," + iFalsoNegativo + "\n";
             fOutStatsLog.write(sCadena.getBytes());
             fOutStatsLog.close();
