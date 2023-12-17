@@ -10,6 +10,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Message;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.TypedValue;
@@ -29,12 +30,15 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 public class Sensado extends FragmentActivity implements AmbientModeSupport.AmbientCallbackProvider {
     private static final String AMBIENT_UPDATE_ACTION = "com.equinoxe.swclassification.action.AMBIENT_UPDATE";
     public static final String NOTIFICATION = "com.equinoxe.swclassification.NOTIFICACION";
     public static final long AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
+    public static final long TIEMPO_ESTADISTICAS_PARCIALES = TimeUnit.SECONDS.toMillis(60);
     //public static final long DELAY_BRUSH = TimeUnit.SECONDS.toMillis(1);
     public static final int WINDOW_FILTER_DETECTION_SIZE = 5;
     //public static final int DESCARTES_TRAS_CAMBIO = 7;
@@ -89,6 +93,9 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
 
     int iContDescartesTrasCambio;
     int iDescartesTrasCambio;
+
+    int iPreviousBatteryLevel;
+    Timer timerGrabarEstadisticasParciales;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,6 +157,16 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
         for (int i=0; i < WINDOW_FILTER_DETECTION_SIZE; i++)
             windowFilterDetection[i] = 0;
         iPosWindowsFilterDetection = 0;
+
+        iPreviousBatteryLevel = getBatteryLevel();
+
+        final TimerTask timerTaskUpdateData = new TimerTask() {
+            public void run() {
+                grabarEstadisticasParciales();
+            }
+        };
+        timerGrabarEstadisticasParciales = new Timer();
+        timerGrabarEstadisticasParciales.scheduleAtFixedRate(timerTaskUpdateData, TIEMPO_ESTADISTICAS_PARCIALES, TIEMPO_ESTADISTICAS_PARCIALES);
 
         crearServicio();
     }
@@ -216,10 +233,8 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
     }
 
     private void refreshDisplayAndSetNextUpdate() {
-        // Implement data retrieval and update the screen
-        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        Intent batteryStatus = registerReceiver(null, ifilter);
-        String sBateria = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) + " %";
+        int iCurrentBatteryLevel = getBatteryLevel();
+        String sBateria = iCurrentBatteryLevel + " %";
         textViewBattery.setText(sBateria);
 
         textViewHora.setText(sdfHora.format(new Date()));
@@ -335,6 +350,42 @@ public class Sensado extends FragmentActivity implements AmbientModeSupport.Ambi
             fOutStatsLog.write(sCadena.getBytes());
             fOutStatsLog.close();
         } catch (IOException e) {
+        }
+    }
+
+    int getBatteryLevel() {
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = registerReceiver(null, ifilter);
+        if (batteryStatus != null) {
+            return batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        }
+        return 0;
+    }
+
+    private void grabarEstadisticasParciales() {
+        int iCurrentBatteryLevel = getBatteryLevel();
+
+        if (iCurrentBatteryLevel < iPreviousBatteryLevel) {
+            iPreviousBatteryLevel = iCurrentBatteryLevel;
+
+            String currentDateandTime = sdfFechaHora.format(new Date());
+            try {
+                File filePath;
+                if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                    filePath = getFilesDir();
+                else
+                    filePath = Environment.getExternalStorageDirectory();
+
+                String sFileName = Build.MODEL + "_" + startDateandTime + "_Stats.txt";
+
+                File fileStatsLog = new File(filePath, sFileName);
+                FileOutputStream fOutStatsLog = new FileOutputStream(fileStatsLog, true);
+
+                String sCadena = startDateandTime + " " + currentDateandTime + " " + iCurrentBatteryLevel + " " + iPositivos + "," + iNegativos + "," + iFalsoPositivo + "," + iFalsoNegativo + "\n";
+                fOutStatsLog.write(sCadena.getBytes());
+                fOutStatsLog.close();
+            } catch (IOException e) {
+            }
         }
     }
 
